@@ -39,6 +39,7 @@ enum class ExprType
   STAR,                 ///< 星号，表示所有字段
   UNBOUND_FIELD,        ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
   UNBOUND_AGGREGATION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateExpr
+  UNBOUND_FUNCTION,     ///< 未绑定的标量函数
 
   FIELD,        ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
   VALUE,        ///< 常量值
@@ -47,6 +48,7 @@ enum class ExprType
   CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,   ///< 算术运算
   AGGREGATION,  ///< 聚合运算
+  FUNCTION,     ///< 标量函数 length/round/date_format
 };
 
 /**
@@ -527,4 +529,63 @@ public:
 private:
   Type                   aggregate_type_;
   unique_ptr<Expression> child_;
+};
+
+class UnboundFunctionExpr : public Expression
+{
+public:
+  enum class FuncType
+  {
+    LENGTH,
+    ROUND,
+    DATE_FORMAT,
+  };
+
+public:
+  UnboundFunctionExpr(FuncType func_type, vector<unique_ptr<Expression>> params);
+  virtual ~UnboundFunctionExpr() = default;
+
+  ExprType type() const override { return ExprType::UNBOUND_FUNCTION; }
+
+  unique_ptr<Expression> copy() const override;
+
+  FuncType func_type() const { return func_type_; }
+
+  vector<unique_ptr<Expression>> &params() { return params_; }
+
+  RC       get_value(const Tuple &tuple, Value &value) const override { return RC::INTERNAL; }
+  AttrType value_type() const override { return AttrType::UNDEFINED; }
+
+private:
+  FuncType                       func_type_;
+  vector<unique_ptr<Expression>> params_;
+};
+
+class FunctionExpr : public Expression
+{
+public:
+  using FuncType = UnboundFunctionExpr::FuncType;
+
+public:
+  FunctionExpr(FuncType func_type, vector<unique_ptr<Expression>> params);
+  virtual ~FunctionExpr() = default;
+
+  ExprType type() const override { return ExprType::FUNCTION; }
+
+  unique_ptr<Expression> copy() const override;
+
+  FuncType func_type() const { return func_type_; }
+
+  vector<unique_ptr<Expression>> &params() { return params_; }
+
+  AttrType value_type() const override;
+  int      value_length() const override;
+
+  RC get_value(const Tuple &tuple, Value &value) const override;
+
+  static RC type_from_string(const char *name, FuncType &type);
+
+private:
+  FuncType                       func_type_;
+  vector<unique_ptr<Expression>> params_;
 };

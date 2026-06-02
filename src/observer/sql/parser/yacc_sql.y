@@ -50,6 +50,22 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   return expr;
 }
 
+UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType func_type,
+    Expression *param1,
+    Expression *param2,
+    const char *sql_string,
+    YYLTYPE *llocp)
+{
+  vector<unique_ptr<Expression>> params;
+  params.emplace_back(param1);
+  if (param2 != nullptr) {
+    params.emplace_back(param2);
+  }
+  UnboundFunctionExpr *expr = new UnboundFunctionExpr(func_type, std::move(params));
+  expr->set_name(token_name(sql_string, llocp));
+  return expr;
+}
+
 %}
 
 %define api.pure full
@@ -121,6 +137,9 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         GE
         NE
         LIKE
+        LENGTH
+        ROUND
+        DATE_FORMAT
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -183,6 +202,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <from_sql>            from_list
 %type <expression>          expression
 %type <expression>          aggregate_expression
+%type <expression>          function_expression
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <cstring>             fields_terminated_by
@@ -577,6 +597,21 @@ expression:
     }
     | aggregate_expression {
       $$ = $1;
+    }
+    | function_expression {
+      $$ = $1;
+    }
+    ;
+
+function_expression:
+    LENGTH LBRACE expression RBRACE {
+      $$ = create_function_expression(UnboundFunctionExpr::FuncType::LENGTH, $3, nullptr, sql_string, &@$);
+    }
+    | ROUND LBRACE expression RBRACE {
+      $$ = create_function_expression(UnboundFunctionExpr::FuncType::ROUND, $3, nullptr, sql_string, &@$);
+    }
+    | DATE_FORMAT LBRACE expression COMMA expression RBRACE {
+      $$ = create_function_expression(UnboundFunctionExpr::FuncType::DATE_FORMAT, $3, $5, sql_string, &@$);
     }
     ;
 

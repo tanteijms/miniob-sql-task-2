@@ -62,6 +62,15 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
       return bind_aggregate_expression(expr, bound_expressions);
     } break;
 
+    case ExprType::UNBOUND_FUNCTION: {
+      return bind_function_expression(expr, bound_expressions);
+    } break;
+
+    case ExprType::FUNCTION: {
+      bound_expressions.emplace_back(std::move(expr));
+      return RC::SUCCESS;
+    } break;
+
     case ExprType::FIELD: {
       return bind_field_expression(expr, bound_expressions);
     } break;
@@ -449,5 +458,60 @@ RC ExpressionBinder::bind_aggregate_expression(
   }
 
   bound_expressions.emplace_back(std::move(aggregate_expr));
+  return RC::SUCCESS;
+}
+
+RC ExpressionBinder::bind_function_expression(
+    unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
+{
+  if (nullptr == expr) {
+    return RC::SUCCESS;
+  }
+
+  auto unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
+  auto func_type             = unbound_function_expr->func_type();
+
+  for (unique_ptr<Expression> &param_expr : unbound_function_expr->params()) {
+    vector<unique_ptr<Expression>> child_bound_expressions;
+    RC                             rc = bind_expression(param_expr, child_bound_expressions);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    if (child_bound_expressions.size() != 1) {
+      LOG_WARN("invalid children number of function expression: %d", child_bound_expressions.size());
+      return RC::INVALID_ARGUMENT;
+    }
+    if (child_bound_expressions[0].get() != param_expr.get()) {
+      param_expr.reset(child_bound_expressions[0].release());
+    }
+  }
+
+  const vector<unique_ptr<Expression>> &params = unbound_function_expr->params();
+  if (func_type == UnboundFunctionExpr::FuncType::LENGTH) {
+    if (params.size() != 1 || params[0]->value_type() != AttrType::CHARS) {
+      return RC::INVALID_ARGUMENT;
+    }
+  } else if (func_type == UnboundFunctionExpr::FuncType::ROUND) {
+    if (params.size() != 1 || params[0]->value_type() != AttrType::FLOATS) {
+      return RC::INVALID_ARGUMENT;
+    }
+  } else if (func_type == UnboundFunctionExpr::FuncType::DATE_FORMAT) {
+    if (params.size() != 2 || params[0]->value_type() != AttrType::DATES ||
+        params[1]->value_type() != AttrType::CHARS) {
+      return RC::INVALID_ARGUMENT;
+    }
+  } else {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  vector<unique_ptr<Expression>> moved_params;
+  for (unique_ptr<Expression> &param_expr : unbound_function_expr->params()) {
+    moved_params.emplace_back(param_expr.release());
+  }
+  unbound_function_expr->params().clear();
+
+  auto function_expr = make_unique<FunctionExpr>(func_type, std::move(moved_params));
+  function_expr->set_name(unbound_function_expr->name());
+  bound_expressions.emplace_back(std::move(function_expr));
   return RC::SUCCESS;
 }

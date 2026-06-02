@@ -14,6 +14,8 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 
+#include "sql/expr/sql_function.h"
+
 #include "sql/expr/like_match.h"
 #include "sql/expr/tuple.h"
 #include "sql/expr/arithmetic_operator.hpp"
@@ -636,4 +638,105 @@ RC AggregateExpr::type_from_string(const char *type_str, AggregateExpr::Type &ty
     rc = RC::INVALID_ARGUMENT;
   }
   return rc;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+UnboundFunctionExpr::UnboundFunctionExpr(FuncType func_type, vector<unique_ptr<Expression>> params)
+    : func_type_(func_type), params_(std::move(params))
+{}
+
+unique_ptr<Expression> UnboundFunctionExpr::copy() const
+{
+  vector<unique_ptr<Expression>> copied_params;
+  for (const unique_ptr<Expression> &param : params_) {
+    copied_params.emplace_back(param->copy());
+  }
+  return make_unique<UnboundFunctionExpr>(func_type_, std::move(copied_params));
+}
+
+FunctionExpr::FunctionExpr(FuncType func_type, vector<unique_ptr<Expression>> params)
+    : func_type_(func_type), params_(std::move(params))
+{}
+
+unique_ptr<Expression> FunctionExpr::copy() const
+{
+  vector<unique_ptr<Expression>> copied_params;
+  for (const unique_ptr<Expression> &param : params_) {
+    copied_params.emplace_back(param->copy());
+  }
+  return make_unique<FunctionExpr>(func_type_, std::move(copied_params));
+}
+
+AttrType FunctionExpr::value_type() const
+{
+  switch (func_type_) {
+    case FuncType::LENGTH: return AttrType::INTS;
+    case FuncType::ROUND: return AttrType::FLOATS;
+    case FuncType::DATE_FORMAT: return AttrType::CHARS;
+    default: return AttrType::UNDEFINED;
+  }
+}
+
+int FunctionExpr::value_length() const
+{
+  switch (func_type_) {
+    case FuncType::LENGTH: return sizeof(int);
+    case FuncType::ROUND: return sizeof(float);
+    case FuncType::DATE_FORMAT: return 128;
+    default: return -1;
+  }
+}
+
+RC FunctionExpr::get_value(const Tuple &tuple, Value &value) const
+{
+  if (params_.empty()) {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  vector<Value> param_values;
+  param_values.reserve(params_.size());
+  for (const unique_ptr<Expression> &param : params_) {
+    Value param_value;
+    RC    rc = param->get_value(tuple, param_value);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+    param_values.emplace_back(std::move(param_value));
+  }
+
+  switch (func_type_) {
+    case FuncType::LENGTH: {
+      if (param_values.size() != 1) {
+        return RC::INVALID_ARGUMENT;
+      }
+      return sql_func_length(tuple, param_values[0], value);
+    }
+    case FuncType::ROUND: {
+      if (param_values.size() != 1) {
+        return RC::INVALID_ARGUMENT;
+      }
+      return sql_func_round(tuple, param_values[0], value);
+    }
+    case FuncType::DATE_FORMAT: {
+      if (param_values.size() != 2) {
+        return RC::INVALID_ARGUMENT;
+      }
+      return sql_func_date_format(tuple, param_values[0], param_values[1], value);
+    }
+    default: return RC::INVALID_ARGUMENT;
+  }
+}
+
+RC FunctionExpr::type_from_string(const char *name, FuncType &type)
+{
+  if (0 == strcasecmp(name, "length")) {
+    type = FuncType::LENGTH;
+  } else if (0 == strcasecmp(name, "round")) {
+    type = FuncType::ROUND;
+  } else if (0 == strcasecmp(name, "date_format")) {
+    type = FuncType::DATE_FORMAT;
+  } else {
+    return RC::INVALID_ARGUMENT;
+  }
+  return RC::SUCCESS;
 }
