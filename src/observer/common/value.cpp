@@ -116,7 +116,8 @@ void Value::set_data(char *data, int length)
     case AttrType::CHARS: {
       set_string(data, length);
     } break;
-    case AttrType::INTS: {
+    case AttrType::INTS:
+    case AttrType::DATES: {
       value_.int_value_ = *(int *)data;
       length_           = length;
     } break;
@@ -138,6 +139,14 @@ void Value::set_int(int val)
 {
   reset();
   attr_type_        = AttrType::INTS;
+  value_.int_value_ = val;
+  length_           = sizeof(val);
+}
+
+void Value::set_date(int val)
+{
+  reset();
+  attr_type_        = AttrType::DATES;
   value_.int_value_ = val;
   length_           = sizeof(val);
 }
@@ -196,6 +205,9 @@ void Value::set_value(const Value &value)
   switch (value.attr_type_) {
     case AttrType::INTS: {
       set_int(value.get_int());
+    } break;
+    case AttrType::DATES: {
+      set_date(value.get_int());
     } break;
     case AttrType::FLOATS: {
       set_float(value.get_float());
@@ -258,7 +270,8 @@ int Value::get_int() const
         return 0;
       }
     }
-    case AttrType::INTS: {
+    case AttrType::INTS:
+    case AttrType::DATES: {
       return value_.int_value_;
     }
     case AttrType::FLOATS: {
