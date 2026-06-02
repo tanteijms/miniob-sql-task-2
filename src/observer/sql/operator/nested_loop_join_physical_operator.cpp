@@ -34,13 +34,45 @@ RC NestedLoopJoinPhysicalOperator::open(Trx *trx)
   return rc;
 }
 
+bool NestedLoopJoinPhysicalOperator::match_join_predicates()
+{
+  if (join_predicates_.empty()) {
+    return true;
+  }
+
+  Value value;
+  for (const unique_ptr<Expression> &predicate : join_predicates_) {
+    RC rc = predicate->get_value(joined_tuple_, value);
+    if (rc != RC::SUCCESS) {
+      return false;
+    }
+    if (!value.get_boolean()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 RC NestedLoopJoinPhysicalOperator::next()
 {
-  RC   rc             = RC::SUCCESS;
-  while (RC::SUCCESS == rc) {
+  while (true) {
     bool left_need_step = (left_tuple_ == nullptr);
+    RC   rc             = RC::SUCCESS;
     if (round_done_) {
       left_need_step = true;
+    } else {
+      rc = right_next();
+      if (rc == RC::SUCCESS) {
+        if (match_join_predicates()) {
+          return RC::SUCCESS;
+        }
+        continue;
+      }
+      if (rc == RC::RECORD_EOF) {
+        left_need_step = true;
+      } else {
+        return rc;
+      }
     }
 
     if (left_need_step) {
@@ -52,16 +84,12 @@ RC NestedLoopJoinPhysicalOperator::next()
 
     rc = right_next();
     if (rc != RC::SUCCESS) {
-      if (rc == RC::RECORD_EOF) {
-        rc = RC::SUCCESS;
-        round_done_ = true;
-        continue;
-      } else {
-        return rc;
-      }
+      return rc;
+    }
+    if (match_join_predicates()) {
+      return RC::SUCCESS;
     }
   }
-  return rc;
 }
 
 RC NestedLoopJoinPhysicalOperator::close()

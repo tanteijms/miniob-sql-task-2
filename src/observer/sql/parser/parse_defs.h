@@ -87,10 +87,20 @@ struct ConditionSqlNode
  * 甚至可以包含复杂的表达式。
  */
 
+/**
+ * @brief FROM 子句解析结果（逗号表列表或 INNER JOIN 链）
+ */
+struct FromSqlNode
+{
+  vector<string>                   relations;        ///< 表名，按出现顺序
+  vector<vector<ConditionSqlNode>> join_conditions;  ///< join_conditions[i] 为加入 relations[i+1] 时的 ON 条件（AND）
+};
+
 struct SelectSqlNode
 {
   vector<unique_ptr<Expression>> expressions;  ///< 查询的表达式
-  vector<string>                 relations;    ///< 查询的表
+  vector<string>                 relations;    ///< 查询的表（与 from.relations 同步）
+  vector<vector<ConditionSqlNode>> join_conditions;  ///< 见 FromSqlNode
   vector<ConditionSqlNode>       conditions;   ///< 查询条件，使用AND串联起来多个条件
   vector<unique_ptr<Expression>> group_by;     ///< group by clause
 };

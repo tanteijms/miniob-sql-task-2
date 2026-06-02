@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/select_stmt.h"
 #include "common/lang/string.h"
 #include "common/log/log.h"
+#include "sql/optimizer/logical_plan_generator.h"
 #include "sql/stmt/filter_stmt.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
@@ -87,6 +88,37 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     default_table = tables[0];
   }
 
+  if (!select_sql.join_conditions.empty() &&
+      select_sql.join_conditions.size() + 1 != select_sql.relations.size()) {
+    LOG_WARN("join on conditions count mismatch. relations=%zu, join_conditions=%zu",
+        select_sql.relations.size(),
+        select_sql.join_conditions.size());
+    return RC::INVALID_ARGUMENT;
+  }
+
+  vector<vector<unique_ptr<Expression>>> join_predicates;
+  for (const vector<ConditionSqlNode> &join_conds : select_sql.join_conditions) {
+    FilterStmt                            *join_filter = nullptr;
+    RC                                     jrc         = FilterStmt::create(db,
+        default_table,
+        &table_map,
+        join_conds.data(),
+        static_cast<int>(join_conds.size()),
+        join_filter);
+    if (jrc != RC::SUCCESS) {
+      LOG_WARN("cannot construct join filter stmt");
+      return jrc;
+    }
+
+    vector<unique_ptr<Expression>> cmp_exprs;
+    jrc = LogicalPlanGenerator::create_comparison_expressions(join_filter, cmp_exprs);
+    delete join_filter;
+    if (jrc != RC::SUCCESS) {
+      return jrc;
+    }
+    join_predicates.push_back(std::move(cmp_exprs));
+  }
+
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
   RC          rc          = FilterStmt::create(db,
@@ -107,6 +139,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   select_stmt->query_expressions_.swap(bound_expressions);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->group_by_.swap(group_by_expressions);
+  select_stmt->join_predicates_.swap(join_predicates);
   stmt                      = select_stmt;
   return RC::SUCCESS;
 }

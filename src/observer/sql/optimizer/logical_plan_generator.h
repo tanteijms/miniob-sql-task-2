@@ -15,9 +15,11 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include "common/lang/memory.h"
+#include "common/lang/vector.h"
 #include "common/sys/rc.h"
 #include "common/type/attr_type.h"
 
+class Expression;
 class Stmt;
 class CalcStmt;
 class SelectStmt;
@@ -36,6 +38,10 @@ public:
 
   RC create(Stmt *stmt, unique_ptr<LogicalOperator> &logical_operator);
 
+  /// 将 FilterStmt 中的条件转为 ComparisonExpr 列表（AND 语义由上层组合）
+  static RC create_comparison_expressions(
+      FilterStmt *filter_stmt, vector<unique_ptr<Expression>> &cmp_exprs);
+
 private:
   RC create_plan(CalcStmt *calc_stmt, unique_ptr<LogicalOperator> &logical_operator);
   RC create_plan(SelectStmt *select_stmt, unique_ptr<LogicalOperator> &logical_operator);
@@ -47,5 +53,5 @@ private:
 
   RC create_group_by_plan(SelectStmt *select_stmt, unique_ptr<LogicalOperator> &logical_operator);
 
-  int implicit_cast_cost(AttrType from, AttrType to);
+  static int implicit_cast_cost(AttrType from, AttrType to);
 };

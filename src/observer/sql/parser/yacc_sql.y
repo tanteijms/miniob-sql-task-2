@@ -96,6 +96,8 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         INTO
         VALUES
         FROM
+        INNER
+        JOIN
         WHERE
         AND
         SET
@@ -135,6 +137,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   vector<ConditionSqlNode> *                 condition_list;
   vector<RelAttrSqlNode> *                   rel_attr_list;
   vector<string> *                           relation_list;
+  FromSqlNode *                              from_sql;
   vector<string> *                           key_list;
   char *                                     cstring;
   int                                        number;
@@ -151,6 +154,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %destructor { delete $$; } <condition_list>
 // %destructor { delete $$; } <rel_attr_list>
 %destructor { delete $$; } <relation_list>
+%destructor { delete $$; } <from_sql>
 %destructor { delete $$; } <key_list>
 
 %token <number> NUMBER
@@ -176,6 +180,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <key_list>            primary_key
 %type <key_list>            attr_list
 %type <relation_list>       rel_list
+%type <from_sql>            from_list
 %type <expression>          expression
 %type <expression>          aggregate_expression
 %type <expression_list>     expression_list
@@ -486,7 +491,7 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT expression_list FROM rel_list where group_by
+    SELECT expression_list FROM from_list where group_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -495,7 +500,8 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       if ($4 != nullptr) {
-        $$->selection.relations.swap(*$4);
+        $$->selection.relations.swap($4->relations);
+        $$->selection.join_conditions.swap($4->join_conditions);
         delete $4;
       }
 
@@ -597,6 +603,31 @@ relation:
       $$ = $1;
     }
     ;
+from_list:
+    relation {
+      $$ = new FromSqlNode();
+      $$->relations.push_back($1);
+    }
+    | relation COMMA rel_list {
+      $$ = new FromSqlNode();
+      $$->relations.push_back($1);
+      if ($3 != nullptr) {
+        $$->relations.insert($$->relations.end(), $3->begin(), $3->end());
+        delete $3;
+      }
+    }
+    | from_list INNER JOIN relation ON condition_list {
+      $$ = $1;
+      $$->relations.push_back($4);
+      vector<ConditionSqlNode> on_conds;
+      if ($6 != nullptr) {
+        on_conds.swap(*$6);
+        delete $6;
+      }
+      $$->join_conditions.push_back(std::move(on_conds));
+    }
+    ;
+
 rel_list:
     relation {
       $$ = new vector<string>();
