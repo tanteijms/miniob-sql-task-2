@@ -123,6 +123,16 @@
       "timeout_sec": 60
     },
     {
+      "id": "official-complex-sub-query",
+      "name": "primary-complex-sub-query",
+      "category": "official",
+      "feature": "complex-sub-query",
+      "points": 5,
+      "file": "test/case/test/primary-complex-sub-query.test",
+      "expected_failure": 4,
+      "timeout_sec": 60
+    },
+    {
       "id": "custom-basic",
       "name": "basic.sql",
       "category": "custom",
@@ -300,6 +310,16 @@
       "feature": "simple-sub-query",
       "points": 4,
       "file": "lab/test/cases/sql/simple-sub-query.sql",
+      "expected_failure": 0,
+      "timeout_sec": 60
+    },
+    {
+      "id": "custom-complex-sub-query",
+      "name": "complex-sub-query.sql",
+      "category": "custom",
+      "feature": "complex-sub-query",
+      "points": 5,
+      "file": "lab/test/cases/sql/complex-sub-query.sql",
       "expected_failure": 0,
       "timeout_sec": 60
     },
