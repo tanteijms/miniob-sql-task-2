@@ -47,6 +47,7 @@ public:
   vector<vector<unique_ptr<Expression>>> &join_predicates() { return join_predicates_; }
   vector<unique_ptr<Expression>>         &order_by() { return order_by_; }
   vector<bool>                           &order_by_flags() { return order_by_flags_; }
+  unique_ptr<Expression>                 &having_expression() { return having_expression_; }
 
 private:
   vector<unique_ptr<Expression>>                  query_expressions_;
@@ -56,4 +57,5 @@ private:
   vector<vector<unique_ptr<Expression>>>            join_predicates_;
   vector<unique_ptr<Expression>>                    order_by_;
   vector<bool>                                      order_by_flags_;
+  unique_ptr<Expression>                            having_expression_;
 };

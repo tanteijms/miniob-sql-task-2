@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 #include "sql/parser/expression_binder.h"
+#include "sql/expr/expression.h"
 
 using namespace std;
 using namespace common;
@@ -100,6 +101,29 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     order_by_flags.push_back(order_node.asc);
   }
 
+  unique_ptr<Expression> having_expression;
+  if (!select_sql.having.empty()) {
+    vector<unique_ptr<Expression>> bound_having;
+    for (unique_ptr<Expression> &expr : select_sql.having) {
+      vector<unique_ptr<Expression>> bound;
+      RC                             rc = expression_binder.bind_expression(expr, bound);
+      if (OB_FAIL(rc)) {
+        LOG_INFO("bind having expression failed. rc=%s", strrc(rc));
+        return rc;
+      }
+      if (bound.size() != 1) {
+        LOG_WARN("invalid having expression number: %d", bound.size());
+        return RC::INVALID_ARGUMENT;
+      }
+      bound_having.emplace_back(std::move(bound[0]));
+    }
+    if (bound_having.size() == 1) {
+      having_expression = std::move(bound_having[0]);
+    } else {
+      having_expression = make_unique<ConjunctionExpr>(ConjunctionExpr::Type::AND, bound_having);
+    }
+  }
+
   Table *default_table = nullptr;
   if (tables.size() == 1) {
     default_table = tables[0];
@@ -159,6 +183,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   select_stmt->join_predicates_.swap(join_predicates);
   select_stmt->order_by_.swap(order_by_expressions);
   select_stmt->order_by_flags_.swap(order_by_flags);
+  select_stmt->having_expression_ = std::move(having_expression);
   stmt                      = select_stmt;
   return RC::SUCCESS;
 }

@@ -157,6 +157,19 @@ RC LogicalPlanGenerator::create_plan(SelectStmt *select_stmt, unique_ptr<Logical
     last_oper = &group_by_oper;
   }
 
+  unique_ptr<LogicalOperator> having_oper;
+  if (select_stmt->having_expression()) {
+    if (!group_by_oper) {
+      LOG_WARN("HAVING clause requires GROUP BY or aggregate functions");
+      return RC::INVALID_ARGUMENT;
+    }
+    having_oper = make_unique<PredicateLogicalOperator>(std::move(select_stmt->having_expression()));
+    if (*last_oper) {
+      having_oper->add_child(std::move(*last_oper));
+    }
+    last_oper = &having_oper;
+  }
+
   unique_ptr<LogicalOperator> sort_oper;
   if (!select_stmt->order_by().empty()) {
     auto sort = make_unique<SortLogicalOperator>();
@@ -405,13 +418,25 @@ RC LogicalPlanGenerator::create_group_by_plan(SelectStmt *select_stmt, unique_pt
     bind_group_by_expr(expression);
   }
 
+  if (select_stmt->having_expression()) {
+    bind_group_by_expr(select_stmt->having_expression());
+  }
+
   for (unique_ptr<Expression> &expression : query_expressions) {
     find_unbound_column(expression);
+  }
+
+  if (select_stmt->having_expression()) {
+    find_unbound_column(select_stmt->having_expression());
   }
 
   // collect all aggregate expressions
   for (unique_ptr<Expression> &expression : query_expressions) {
     collector(expression);
+  }
+
+  if (select_stmt->having_expression()) {
+    collector(select_stmt->having_expression());
   }
 
   if (group_by_expressions.empty() && aggregate_expressions.empty()) {

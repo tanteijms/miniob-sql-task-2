@@ -109,6 +109,7 @@ struct SelectSqlNode
   vector<vector<ConditionSqlNode>> join_conditions;  ///< 见 FromSqlNode
   vector<ConditionSqlNode>       conditions;   ///< 查询条件，使用AND串联起来多个条件
   vector<unique_ptr<Expression>> group_by;     ///< group by clause
+  vector<unique_ptr<Expression>> having;       ///< having clause (ComparisonExpr list, AND)
   vector<OrderBySqlNode>         order_by;     ///< order by clause
 };
 

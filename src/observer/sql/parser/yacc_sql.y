@@ -50,6 +50,17 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   return expr;
 }
 
+ComparisonExpr *create_comparison_expression(CompOp comp,
+                                             Expression *left,
+                                             Expression *right,
+                                             const char *sql_string,
+                                             YYLTYPE *llocp)
+{
+  ComparisonExpr *expr = new ComparisonExpr(comp, unique_ptr<Expression>(left), unique_ptr<Expression>(right));
+  expr->set_name(token_name(sql_string, llocp));
+  return expr;
+}
+
 UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType func_type,
     Expression *param1,
     Expression *param2,
@@ -84,6 +95,7 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         CREATE
         DROP
         GROUP
+        HAVING
         TABLE
         TABLES
         INDEX
@@ -209,6 +221,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <expression>          function_expression
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
+%type <expression_list>     having
+%type <expression>          having_condition
 %type <order_by_list>       order_by
 %type <order_by_list>       order_by_list
 %type <cstring>             fields_terminated_by
@@ -517,7 +531,7 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT expression_list FROM from_list where group_by order_by
+    SELECT expression_list FROM from_list where group_by having order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -542,8 +556,13 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       if ($7 != nullptr) {
-        $$->selection.order_by.swap(*$7);
+        $$->selection.having.swap(*$7);
         delete $7;
+      }
+
+      if ($8 != nullptr) {
+        $$->selection.order_by.swap(*$8);
+        delete $8;
       }
     }
     ;
@@ -787,6 +806,39 @@ group_by:
       // group by 的表达式范围与select查询值的表达式范围是不同的，比如group by不支持 *
       // 但是这里没有处理。
       $$ = $3;
+    }
+    ;
+
+having:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | HAVING having_condition
+    {
+      $$ = new vector<unique_ptr<Expression>>;
+      $$->emplace_back($2);
+    }
+    | HAVING having_condition AND having
+    {
+      if ($4 != nullptr) {
+        $$ = $4;
+      } else {
+        $$ = new vector<unique_ptr<Expression>>;
+      }
+      $$->emplace($$->begin(), $2);
+    }
+    ;
+
+having_condition:
+    expression comp_op value
+    {
+      $$ = create_comparison_expression($2, $1, new ValueExpr(*$3), sql_string, &@$);
+      delete $3;
+    }
+    | expression comp_op expression
+    {
+      $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
     }
     ;
 
