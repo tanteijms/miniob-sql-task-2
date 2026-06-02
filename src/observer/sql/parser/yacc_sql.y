@@ -90,6 +90,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         CALC
         SELECT
         DESC
+        ASC
+        ORDER
         SHOW
         SYNC
         INSERT
@@ -158,6 +160,7 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
   vector<string> *                           relation_list;
   FromSqlNode *                              from_sql;
   vector<string> *                           key_list;
+  vector<OrderBySqlNode> *                   order_by_list;
   char *                                     cstring;
   int                                        number;
   float                                      floats;
@@ -175,6 +178,7 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %destructor { delete $$; } <relation_list>
 %destructor { delete $$; } <from_sql>
 %destructor { delete $$; } <key_list>
+%destructor { delete $$; } <order_by_list>
 
 %token <number> NUMBER
 %token <floats> FLOAT
@@ -205,6 +209,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <expression>          function_expression
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
+%type <order_by_list>       order_by
+%type <order_by_list>       order_by_list
 %type <cstring>             fields_terminated_by
 %type <cstring>             enclosed_by
 %type <sql_node>            calc_stmt
@@ -511,7 +517,7 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT expression_list FROM from_list where group_by
+    SELECT expression_list FROM from_list where group_by order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -533,6 +539,11 @@ select_stmt:        /*  select 语句的语法解析树*/
       if ($6 != nullptr) {
         $$->selection.group_by.swap(*$6);
         delete $6;
+      }
+
+      if ($7 != nullptr) {
+        $$->selection.order_by.swap(*$7);
+        delete $7;
       }
     }
     ;
@@ -778,6 +789,69 @@ group_by:
       $$ = $3;
     }
     ;
+
+order_by:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | ORDER BY order_by_list
+    {
+      $$ = $3;
+    }
+    ;
+
+order_by_list:
+    expression
+    {
+      $$ = new vector<OrderBySqlNode>;
+      OrderBySqlNode node;
+      node.expression.reset($1);
+      node.asc = true;
+      $$->emplace_back(std::move(node));
+    }
+    | expression ASC
+    {
+      $$ = new vector<OrderBySqlNode>;
+      OrderBySqlNode node;
+      node.expression.reset($1);
+      node.asc = true;
+      $$->emplace_back(std::move(node));
+    }
+    | expression DESC
+    {
+      $$ = new vector<OrderBySqlNode>;
+      OrderBySqlNode node;
+      node.expression.reset($1);
+      node.asc = false;
+      $$->emplace_back(std::move(node));
+    }
+    | order_by_list COMMA expression
+    {
+      $$ = $1;
+      OrderBySqlNode node;
+      node.expression.reset($3);
+      node.asc = true;
+      $$->emplace_back(std::move(node));
+    }
+    | order_by_list COMMA expression ASC
+    {
+      $$ = $1;
+      OrderBySqlNode node;
+      node.expression.reset($3);
+      node.asc = true;
+      $$->emplace_back(std::move(node));
+    }
+    | order_by_list COMMA expression DESC
+    {
+      $$ = $1;
+      OrderBySqlNode node;
+      node.expression.reset($3);
+      node.asc = false;
+      $$->emplace_back(std::move(node));
+    }
+    ;
+
 load_data_stmt:
     LOAD DATA INFILE SSS INTO TABLE ID fields_terminated_by enclosed_by
     {

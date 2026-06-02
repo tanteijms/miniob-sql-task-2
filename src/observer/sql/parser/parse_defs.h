@@ -96,6 +96,12 @@ struct FromSqlNode
   vector<vector<ConditionSqlNode>> join_conditions;  ///< join_conditions[i] 为加入 relations[i+1] 时的 ON 条件（AND）
 };
 
+struct OrderBySqlNode
+{
+  unique_ptr<Expression> expression;
+  bool                   asc = true;
+};
+
 struct SelectSqlNode
 {
   vector<unique_ptr<Expression>> expressions;  ///< 查询的表达式
@@ -103,6 +109,7 @@ struct SelectSqlNode
   vector<vector<ConditionSqlNode>> join_conditions;  ///< 见 FromSqlNode
   vector<ConditionSqlNode>       conditions;   ///< 查询条件，使用AND串联起来多个条件
   vector<unique_ptr<Expression>> group_by;     ///< group by clause
+  vector<OrderBySqlNode>         order_by;     ///< order by clause
 };
 
 /**

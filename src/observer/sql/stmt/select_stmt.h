@@ -45,6 +45,8 @@ public:
   vector<unique_ptr<Expression>> &query_expressions() { return query_expressions_; }
   vector<unique_ptr<Expression>> &group_by() { return group_by_; }
   vector<vector<unique_ptr<Expression>>> &join_predicates() { return join_predicates_; }
+  vector<unique_ptr<Expression>>         &order_by() { return order_by_; }
+  vector<bool>                           &order_by_flags() { return order_by_flags_; }
 
 private:
   vector<unique_ptr<Expression>>                  query_expressions_;
@@ -52,4 +54,6 @@ private:
   FilterStmt                                       *filter_stmt_ = nullptr;
   vector<unique_ptr<Expression>>                    group_by_;
   vector<vector<unique_ptr<Expression>>>            join_predicates_;
+  vector<unique_ptr<Expression>>                    order_by_;
+  vector<bool>                                      order_by_flags_;
 };
