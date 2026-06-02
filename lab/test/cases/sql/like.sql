@@ -1,0 +1,10 @@
+CREATE TABLE lk(id int, name char(10));
+INSERT INTO lk VALUES (1, 'abc');
+INSERT INTO lk VALUES (2, 'abcd');
+INSERT INTO lk VALUES (3, 'def');
+INSERT INTO lk VALUES (4, 'x');
+SELECT * FROM lk WHERE name LIKE 'abc';
+SELECT * FROM lk WHERE name LIKE 'abc%';
+SELECT * FROM lk WHERE name LIKE '%bc_';
+SELECT * FROM lk WHERE name LIKE '_bc';
+SELECT * FROM lk WHERE name LIKE 'a_c%';

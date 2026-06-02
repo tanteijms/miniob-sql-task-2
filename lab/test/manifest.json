@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "description": "MiniOB 已实现功能的全量回归 + 压力测试清单",
+  "suites": [
+    {
+      "id": "official-basic",
+      "name": "basic",
+      "category": "official",
+      "feature": "basic",
+      "points": 2,
+      "file": "test/case/test/basic.test",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-drop-table",
+      "name": "primary-drop-table",
+      "category": "official",
+      "feature": "drop-table",
+      "points": 2,
+      "file": "test/case/test/primary-drop-table.test",
+      "expected_failure": 6,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-update",
+      "name": "primary-update",
+      "category": "official",
+      "feature": "update",
+      "points": 2,
+      "file": "test/case/test/primary-update.test",
+      "expected_failure": 4,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-date",
+      "name": "primary-date",
+      "category": "official",
+      "feature": "date",
+      "points": 2,
+      "file": "test/case/test/primary-date.test",
+      "expected_failure": 4,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-aggregation",
+      "name": "primary-aggregation-func",
+      "category": "official",
+      "feature": "aggregation-func",
+      "points": 2,
+      "file": "test/case/test/primary-aggregation-func.test",
+      "expected_failure": 7,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-join",
+      "name": "primary-join-tables",
+      "category": "official",
+      "feature": "join-tables",
+      "points": 2,
+      "file": "test/case/test/primary-join-tables.test",
+      "expected_failure": 0,
+      "timeout_sec": 120
+    },
+    {
+      "id": "official-order-by",
+      "name": "primary-order-by",
+      "category": "official",
+      "feature": "order-by",
+      "points": 2,
+      "file": "test/case/test/primary-order-by.test",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-group-by",
+      "name": "primary-group-by",
+      "category": "official",
+      "feature": "group-by",
+      "points": 4,
+      "file": "test/case/test/primary-group-by.test",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-multi-index",
+      "name": "primary-multi-index",
+      "category": "official",
+      "feature": "multi-index",
+      "points": 4,
+      "file": "test/case/test/primary-multi-index.test",
+      "expected_failure": 3,
+      "timeout_sec": 60
+    },
+    {
+      "id": "official-expression",
+      "name": "primary-expression",
+      "category": "official",
+      "feature": "function",
+      "points": 2,
+      "file": "test/case/test/primary-expression.test",
+      "expected_failure": 1,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-basic",
+      "name": "basic.sql",
+      "category": "custom",
+      "feature": "basic",
+      "points": 2,
+      "file": "lab/test/cases/sql/basic.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-drop-table",
+      "name": "drop-table.sql",
+      "category": "custom",
+      "feature": "drop-table",
+      "points": 2,
+      "file": "lab/test/cases/sql/drop-table.sql",
+      "expected_failure": 1,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-update",
+      "name": "update.sql",
+      "category": "custom",
+      "feature": "update",
+      "points": 2,
+      "file": "lab/test/cases/sql/update.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-update-index",
+      "name": "update-index.sql",
+      "category": "custom",
+      "feature": "update",
+      "points": 2,
+      "file": "lab/test/cases/sql/update-index.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-date",
+      "name": "date.sql",
+      "category": "custom",
+      "feature": "date",
+      "points": 2,
+      "file": "lab/test/cases/sql/date.sql",
+      "expected_failure": 2,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-date-delete",
+      "name": "date-delete.sql",
+      "category": "custom",
+      "feature": "date",
+      "points": 2,
+      "file": "lab/test/cases/sql/date-delete.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-aggregation",
+      "name": "aggregation.sql",
+      "category": "custom",
+      "feature": "aggregation-func",
+      "points": 2,
+      "file": "lab/test/cases/sql/aggregation.sql",
+      "expected_failure": 2,
+      "timeout_sec": 30,
+      "assertions": [
+        {
+          "name": "count(*)",
+          "sql": "SELECT count(*) FROM ag;",
+          "rows": [["4"]]
+        },
+        {
+          "name": "avg(num)",
+          "sql": "SELECT avg(num) FROM ag;",
+          "rows": [["15"]]
+        }
+      ]
+    },
+    {
+      "id": "custom-like",
+      "name": "like.sql",
+      "category": "custom",
+      "feature": "like",
+      "points": 2,
+      "file": "lab/test/cases/sql/like.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-join",
+      "name": "join.sql",
+      "category": "custom",
+      "feature": "join-tables",
+      "points": 2,
+      "file": "lab/test/cases/sql/join.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-function",
+      "name": "function.sql",
+      "category": "custom",
+      "feature": "function",
+      "points": 2,
+      "file": "lab/test/cases/sql/function.sql",
+      "expected_failure": 2,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-order-by",
+      "name": "order-by.sql",
+      "category": "custom",
+      "feature": "order-by",
+      "points": 2,
+      "file": "lab/test/cases/sql/order-by.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-group-by",
+      "name": "group-by.sql",
+      "category": "custom",
+      "feature": "group-by",
+      "points": 4,
+      "file": "lab/test/cases/sql/group-by.sql",
+      "expected_failure": 0,
+      "timeout_sec": 30,
+      "assertions": [
+        {
+          "name": "having avg(score)>2",
+          "sql": "SELECT id, avg(score) FROM t_group_by GROUP BY id HAVING avg(score) > 2 ORDER BY id;",
+          "rows": [["3", "2.4"], ["4", "3"]]
+        },
+        {
+          "name": "having count(id)>1",
+          "sql": "SELECT name, count(id) FROM t_group_by GROUP BY name HAVING count(id) > 1;",
+          "rows": [["c", "3"]]
+        }
+      ]
+    },
+    {
+      "id": "custom-multi-index",
+      "name": "multi-index.sql",
+      "category": "custom",
+      "feature": "multi-index",
+      "points": 4,
+      "file": "lab/test/cases/sql/multi-index.sql",
+      "expected_failure": 1,
+      "timeout_sec": 60
+    },
+    {
+      "id": "stress-big-write",
+      "name": "big-write (500 ops)",
+      "category": "stress",
+      "feature": "big-write",
+      "points": 5,
+      "generator": "lab/test/stress/gen_big_write_sql.py",
+      "expected_rows": 420,
+      "restart_check": true,
+      "timeout_sec": 120
+    },
+    {
+      "id": "stress-big-write-2k",
+      "name": "big-write (2000 ops)",
+      "category": "stress",
+      "feature": "big-write",
+      "points": 5,
+      "generator": "lab/test/stress/gen_big_write_2k.py",
+      "expected_rows": 1680,
+      "restart_check": false,
+      "timeout_sec": 300,
+      "tags": ["slow"]
+    }
+  ]
+}

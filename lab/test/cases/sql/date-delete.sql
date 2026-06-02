@@ -1,0 +1,5 @@
+CREATE TABLE dt(id int, u_date date);
+INSERT INTO dt VALUES (1,'2015-1-1');
+INSERT INTO dt VALUES (2,'2020-1-1');
+DELETE FROM dt WHERE u_date>'2012-2-29';
+SELECT * FROM dt;

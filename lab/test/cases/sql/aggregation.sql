@@ -1,0 +1,15 @@
+CREATE TABLE ag(id int, num int, price float, addr char(10));
+INSERT INTO ag VALUES (1, 18, 10.0, 'abc');
+INSERT INTO ag VALUES (2, 15, 20.0, 'abc');
+INSERT INTO ag VALUES (3, 12, 30.0, 'def');
+INSERT INTO ag VALUES (4, 15, 30.0, 'dei');
+SELECT count(*) FROM ag;
+SELECT count(num) FROM ag;
+SELECT min(num) FROM ag;
+SELECT max(num) FROM ag;
+SELECT avg(num) FROM ag;
+SELECT min(price) FROM ag;
+SELECT max(addr) FROM ag;
+SELECT min(num), max(num), avg(num) FROM ag;
+SELECT min(*) FROM ag;
+SELECT count(id2) FROM ag;
