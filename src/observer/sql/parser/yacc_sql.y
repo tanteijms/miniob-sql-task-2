@@ -100,6 +100,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         HAVING
         IN
         NOT
+        NULL_T
+        IS
         TABLE
         TABLES
         INDEX
@@ -431,12 +433,29 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
+      $$->nullable = true;
+    }
+    | ID type LBRACE number RBRACE NULL_T
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = $4;
+      $$->nullable = true;
+    }
+    | ID type LBRACE number RBRACE NOT NULL_T
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = $4;
+      $$->nullable = false;
     }
     | ID type
     {
@@ -444,6 +463,23 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = 4;
+      $$->nullable = true;
+    }
+    | ID type NULL_T
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = 4;
+      $$->nullable = true;
+    }
+    | ID type NOT NULL_T
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = 4;
+      $$->nullable = false;
     }
     ;
 number:
@@ -519,6 +555,11 @@ value:
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp);
       free(tmp);
+    }
+    |NULL_T {
+      $$ = new Value();
+      $$->set_null();
+      @$ = @1;
     }
     ;
 storage_format:
@@ -846,6 +887,14 @@ where_predicate:
     | expression NOT IN LBRACE select_subquery RBRACE
     {
       $$ = new InSubQueryExpr(unique_ptr<Expression>($1), unique_ptr<Expression>($5), true);
+    }
+    | expression IS NULL_T
+    {
+      $$ = create_comparison_expression(IS_NULL, $1, new ValueExpr(Value()), sql_string, &@$);
+    }
+    | expression IS NOT NULL_T
+    {
+      $$ = create_comparison_expression(IS_NOT_NULL, $1, new ValueExpr(Value()), sql_string, &@$);
     }
     ;
 

@@ -268,6 +268,17 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &    value = values[i];
+    if (value.is_null()) {
+      if (!field->nullable()) {
+        LOG_WARN("NULL value not allowed for NOT NULL field. table=%s, field=%s",
+            table_meta_.name(), field->name());
+        rc = RC::INVALID_ARGUMENT;
+        break;
+      }
+      table_meta_.set_field_null(record_data, field->field_id(), true);
+      continue;
+    }
+    table_meta_.set_field_null(record_data, field->field_id(), false);
     if (field->type() != value.attr_type()) {
       Value real_value;
       rc = Value::cast_to(value, field->type(), real_value);

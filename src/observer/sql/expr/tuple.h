@@ -197,6 +197,10 @@ public:
     const FieldMeta *field_meta = field_expr->field().meta();
     cell.reset();
     cell.set_type(field_meta->type());
+    if (table_->table_meta().field_is_null(record_->data(), field_meta->field_id())) {
+      cell.set_null(field_meta->type());
+      return RC::SUCCESS;
+    }
     cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
     return RC::SUCCESS;
   }

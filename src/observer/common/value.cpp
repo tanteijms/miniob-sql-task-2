@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/sstream.h"
 #include "common/lang/string.h"
 #include "common/log/log.h"
+#include <climits>
 
 Value::Value(int val) { set_int(val); }
 
@@ -36,6 +37,10 @@ Value::Value(const Value &other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
+  if (is_null_) {
+    return;
+  }
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -52,8 +57,10 @@ Value::Value(Value &&other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   this->value_     = other.value_;
   other.own_data_  = false;
+  other.is_null_   = false;
   other.length_    = 0;
 }
 
@@ -66,6 +73,10 @@ Value &Value::operator=(const Value &other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
+  if (is_null_) {
+    return *this;
+  }
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -87,8 +98,10 @@ Value &Value::operator=(Value &&other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   this->value_     = other.value_;
   other.own_data_  = false;
+  other.is_null_   = false;
   other.length_    = 0;
   return *this;
 }
@@ -108,6 +121,20 @@ void Value::reset()
   attr_type_ = AttrType::UNDEFINED;
   length_    = 0;
   own_data_  = false;
+  is_null_   = false;
+}
+
+void Value::set_null()
+{
+  reset();
+  is_null_ = true;
+}
+
+void Value::set_null(AttrType type)
+{
+  reset();
+  is_null_   = true;
+  attr_type_ = type;
 }
 
 void Value::set_data(char *data, int length)
@@ -202,6 +229,10 @@ void Value::set_empty_string(int len)
 
 void Value::set_value(const Value &value)
 {
+  if (value.is_null_) {
+    set_null(value.attr_type_);
+    return;
+  }
   switch (value.attr_type_) {
     case AttrType::INTS: {
       set_int(value.get_int());
@@ -248,6 +279,9 @@ char *Value::data() const
 
 string Value::to_string() const
 {
+  if (is_null_) {
+    return "NULL";
+  }
   string res;
   RC     rc = DataType::type_instance(this->attr_type_)->to_string(*this, res);
   if (OB_FAIL(rc)) {
@@ -257,7 +291,13 @@ string Value::to_string() const
   return res;
 }
 
-int Value::compare(const Value &other) const { return DataType::type_instance(this->attr_type_)->compare(*this, other); }
+int Value::compare(const Value &other) const
+{
+  if (is_null_ || other.is_null_) {
+    return INT32_MAX;
+  }
+  return DataType::type_instance(this->attr_type_)->compare(*this, other);
+}
 
 int Value::get_int() const
 {

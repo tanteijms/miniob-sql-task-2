@@ -1,0 +1,12 @@
+CREATE TABLE null_table(id int not null, num int null, price float not null, birthday date null);
+INSERT INTO null_table VALUES (1, 18, 10.0, '2020-01-01');
+INSERT INTO null_table VALUES (2, null, 20.0, '2010-01-11');
+INSERT INTO null_table VALUES (3, 12, 30.0, null);
+INSERT INTO null_table VALUES (null, 15, 30.0, '2021-01-31');
+SELECT * FROM null_table WHERE num IS NULL;
+SELECT * FROM null_table WHERE birthday IS NOT NULL;
+SELECT * FROM null_table WHERE num = null;
+SELECT * FROM null_table WHERE 1 is null;
+SELECT count(*) FROM null_table;
+SELECT count(num) FROM null_table;
+SELECT avg(num) FROM null_table;

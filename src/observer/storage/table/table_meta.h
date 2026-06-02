@@ -65,6 +65,11 @@ public:
 
   int record_size() const;
 
+  int  null_bitmap_offset() const { return null_bitmap_offset_; }
+  int  null_bitmap_size() const { return null_bitmap_size_; }
+  bool field_is_null(const char *record, int field_id) const;
+  void set_field_null(char *record, int field_id, bool is_null) const;
+
 public:
   int  serialize(ostream &os) const override;
   int  deserialize(istream &is) override;
@@ -83,4 +88,7 @@ protected:
   StorageEngine     storage_engine_;
 
   int record_size_ = 0;
+  int null_bitmap_offset_ = 0;
+  int null_bitmap_size_   = 0;
+  int user_field_num_     = 0;
 };

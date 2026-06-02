@@ -133,6 +133,16 @@
       "timeout_sec": 60
     },
     {
+      "id": "official-null",
+      "name": "primary-null",
+      "category": "official",
+      "feature": "null",
+      "points": 3,
+      "file": "test/case/test/primary-null.test",
+      "expected_failure": 2,
+      "timeout_sec": 30
+    },
+    {
       "id": "custom-basic",
       "name": "basic.sql",
       "category": "custom",
@@ -322,6 +332,16 @@
       "file": "lab/test/cases/sql/complex-sub-query.sql",
       "expected_failure": 0,
       "timeout_sec": 60
+    },
+    {
+      "id": "custom-null",
+      "name": "null.sql",
+      "category": "custom",
+      "feature": "null",
+      "points": 3,
+      "file": "lab/test/cases/sql/null.sql",
+      "expected_failure": 1,
+      "timeout_sec": 30
     },
     {
       "id": "stress-big-write",

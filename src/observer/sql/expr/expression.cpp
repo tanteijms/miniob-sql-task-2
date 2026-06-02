@@ -173,39 +173,53 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
-  RC  rc         = RC::SUCCESS;
-  int cmp_result = left.compare(right);
-  result         = false;
+  RC rc = RC::SUCCESS;
+  result = false;
   switch (comp_) {
-    case EQUAL_TO: {
-      result = (0 == cmp_result);
+    case IS_NULL: {
+      result = left.is_null();
     } break;
-    case LESS_EQUAL: {
-      result = (cmp_result <= 0);
-    } break;
-    case NOT_EQUAL: {
-      result = (cmp_result != 0);
-    } break;
-    case LESS_THAN: {
-      result = (cmp_result < 0);
-    } break;
-    case GREAT_EQUAL: {
-      result = (cmp_result >= 0);
-    } break;
-    case GREAT_THAN: {
-      result = (cmp_result > 0);
-    } break;
-    case LIKE_OP: {
-      if (left.attr_type() != AttrType::CHARS || right.attr_type() != AttrType::CHARS) {
-        LOG_WARN("LIKE only supports CHAR type. left=%s, right=%s",
-            attr_type_to_string(left.attr_type()), attr_type_to_string(right.attr_type()));
-        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-      }
-      result = like_match(left.get_string(), right.get_string());
+    case IS_NOT_NULL: {
+      result = !left.is_null();
     } break;
     default: {
-      LOG_WARN("unsupported comparison. %d", comp_);
-      rc = RC::INTERNAL;
+      if (left.is_null() || right.is_null()) {
+        result = false;
+        return RC::SUCCESS;
+      }
+      int cmp_result = left.compare(right);
+      switch (comp_) {
+        case EQUAL_TO: {
+          result = (0 == cmp_result);
+        } break;
+        case LESS_EQUAL: {
+          result = (cmp_result <= 0);
+        } break;
+        case NOT_EQUAL: {
+          result = (cmp_result != 0);
+        } break;
+        case LESS_THAN: {
+          result = (cmp_result < 0);
+        } break;
+        case GREAT_EQUAL: {
+          result = (cmp_result >= 0);
+        } break;
+        case GREAT_THAN: {
+          result = (cmp_result > 0);
+        } break;
+        case LIKE_OP: {
+          if (left.attr_type() != AttrType::CHARS || right.attr_type() != AttrType::CHARS) {
+            LOG_WARN("LIKE only supports CHAR type. left=%s, right=%s",
+                attr_type_to_string(left.attr_type()), attr_type_to_string(right.attr_type()));
+            return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+          }
+          result = like_match(left.get_string(), right.get_string());
+        } break;
+        default: {
+          LOG_WARN("unsupported comparison. %d", comp_);
+          rc = RC::INTERNAL;
+        } break;
+      }
     } break;
   }
 
