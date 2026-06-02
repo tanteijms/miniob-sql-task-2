@@ -90,6 +90,47 @@ RC HeapTableEngine::get_record(const RID &rid, Record &record)
   return rc;
 }
 
+RC HeapTableEngine::update_record_with_trx(const Record &old_record, const Record &new_record, Trx * /*trx*/)
+{
+  RC rc = delete_entry_of_indexes(old_record.data(), old_record.rid(), false);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to delete index entries before update. table=%s, rc=%s", table_meta_->name(), strrc(rc));
+    return rc;
+  }
+
+  rc = record_handler_->visit_record(old_record.rid(), [&new_record](Record &record) -> bool {
+    memcpy(record.data(), new_record.data(), new_record.len());
+    return true;
+  });
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to update record. table=%s, rc=%s", table_meta_->name(), strrc(rc));
+    RC rc2 = insert_entry_of_indexes(old_record.data(), old_record.rid());
+    if (rc2 != RC::SUCCESS) {
+      LOG_ERROR("failed to rollback index after update failure. table=%s, rc=%s", table_meta_->name(), strrc(rc2));
+    }
+    return rc;
+  }
+
+  rc = insert_entry_of_indexes(new_record.data(), new_record.rid());
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to insert index entries after update. table=%s, rc=%s", table_meta_->name(), strrc(rc));
+    RC rc2 = record_handler_->visit_record(old_record.rid(), [&old_record](Record &record) -> bool {
+      memcpy(record.data(), old_record.data(), old_record.len());
+      return true;
+    });
+    if (rc2 != RC::SUCCESS) {
+      LOG_ERROR("failed to rollback record after index update failure. table=%s, rc=%s", table_meta_->name(), strrc(rc2));
+    }
+    rc2 = insert_entry_of_indexes(old_record.data(), old_record.rid());
+    if (rc2 != RC::SUCCESS) {
+      LOG_ERROR("failed to rollback index after update failure. table=%s, rc=%s", table_meta_->name(), strrc(rc2));
+    }
+    return rc;
+  }
+
+  return RC::SUCCESS;
+}
+
 RC HeapTableEngine::delete_record(const Record &record)
 {
   RC rc = RC::SUCCESS;
