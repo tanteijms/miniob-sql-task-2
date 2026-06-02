@@ -14,10 +14,11 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
 #include "sql/stmt/stmt.h"
 
 class Table;
+class FilterStmt;
+class FieldMeta;
 
 /**
  * @brief 更新语句
@@ -26,19 +27,21 @@ class Table;
 class UpdateStmt : public Stmt
 {
 public:
-  UpdateStmt() = default;
-  UpdateStmt(Table *table, Value *values, int value_amount);
+  UpdateStmt(Table *table, FilterStmt *filter_stmt, const FieldMeta *field, const Value &value);
+  ~UpdateStmt() override;
 
-public:
+  StmtType type() const override { return StmtType::UPDATE; }
+
+  Table            *table() const { return table_; }
+  FilterStmt       *filter_stmt() const { return filter_stmt_; }
+  const FieldMeta  *field() const { return field_; }
+  const Value      &value() const { return value_; }
+
   static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
 
-public:
-  Table *table() const { return table_; }
-  Value *values() const { return values_; }
-  int    value_amount() const { return value_amount_; }
-
 private:
-  Table *table_        = nullptr;
-  Value *values_       = nullptr;
-  int    value_amount_ = 0;
+  Table            *table_       = nullptr;
+  FilterStmt       *filter_stmt_ = nullptr;
+  const FieldMeta  *field_       = nullptr;
+  Value             value_;
 };
