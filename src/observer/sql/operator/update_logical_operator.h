@@ -10,7 +10,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/value.h"
+#include "sql/expr/expression.h"
 #include "sql/operator/logical_operator.h"
 
 class FieldMeta;
@@ -22,18 +22,18 @@ class Table;
 class UpdateLogicalOperator : public LogicalOperator
 {
 public:
-  UpdateLogicalOperator(Table *table, const FieldMeta *field, const Value &value);
+  UpdateLogicalOperator(Table *table, const FieldMeta *field, unique_ptr<Expression> value_expr);
   ~UpdateLogicalOperator() override = default;
 
   LogicalOperatorType type() const override { return LogicalOperatorType::UPDATE; }
   OpType              get_op_type() const override { return OpType::LOGICALUPDATE; }
 
-  Table           *table() const { return table_; }
-  const FieldMeta *field() const { return field_; }
-  const Value     &value() const { return value_; }
+  Table                  *table() const { return table_; }
+  const FieldMeta        *field() const { return field_; }
+  unique_ptr<Expression> &value_expr() { return value_expr_; }
 
 private:
-  Table           *table_ = nullptr;
-  const FieldMeta *field_ = nullptr;
-  Value            value_;
+  Table                  *table_ = nullptr;
+  const FieldMeta        *field_ = nullptr;
+  unique_ptr<Expression>  value_expr_;
 };

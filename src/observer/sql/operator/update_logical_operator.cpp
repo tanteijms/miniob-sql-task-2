@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field_meta.h"
 #include "storage/table/table.h"
 
-UpdateLogicalOperator::UpdateLogicalOperator(Table *table, const FieldMeta *field, const Value &value)
-    : table_(table), field_(field), value_(value)
+UpdateLogicalOperator::UpdateLogicalOperator(
+    Table *table, const FieldMeta *field, unique_ptr<Expression> value_expr)
+    : table_(table), field_(field), value_expr_(std::move(value_expr))
 {}

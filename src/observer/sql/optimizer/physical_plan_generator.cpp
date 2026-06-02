@@ -334,8 +334,17 @@ RC PhysicalPlanGenerator::create_plan(UpdateLogicalOperator &update_oper, unique
     }
   }
 
+  unique_ptr<Expression> value_expr = std::move(update_oper.value_expr());
+  if (value_expr != nullptr) {
+    RC prep_rc = prepare_subquery_expressions(*value_expr, session);
+    if (OB_FAIL(prep_rc)) {
+      LOG_WARN("failed to prepare subquery expressions for update. rc=%s", strrc(prep_rc));
+      return prep_rc;
+    }
+  }
+
   oper = unique_ptr<PhysicalOperator>(
-      new UpdatePhysicalOperator(update_oper.table(), update_oper.field(), update_oper.value()));
+      new UpdatePhysicalOperator(update_oper.table(), update_oper.field(), std::move(value_expr)));
 
   if (child_physical_oper) {
     oper->add_child(std::move(child_physical_oper));

@@ -15,13 +15,14 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/update_stmt.h"
 
 #include "common/log/log.h"
+#include "sql/parser/expression_binder.h"
 #include "sql/stmt/filter_stmt.h"
 #include "storage/db/db.h"
 #include "storage/field/field_meta.h"
 #include "storage/table/table.h"
 
-UpdateStmt::UpdateStmt(Table *table, FilterStmt *filter_stmt, const FieldMeta *field, const Value &value)
-    : table_(table), filter_stmt_(filter_stmt), field_(field), value_(value)
+UpdateStmt::UpdateStmt(Table *table, FilterStmt *filter_stmt, const FieldMeta *field, unique_ptr<Expression> value_expr)
+    : table_(table), filter_stmt_(filter_stmt), field_(field), value_expr_(std::move(value_expr))
 {}
 
 UpdateStmt::~UpdateStmt()
@@ -32,11 +33,16 @@ UpdateStmt::~UpdateStmt()
   }
 }
 
-RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
+RC UpdateStmt::create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt)
 {
   const char *table_name = update_sql.relation_name.c_str();
   if (nullptr == db || nullptr == table_name) {
     LOG_WARN("invalid argument. db=%p, table_name=%p", db, table_name);
+    return RC::INVALID_ARGUMENT;
+  }
+
+  if (update_sql.value_expr == nullptr) {
+    LOG_WARN("update value expression is null");
     return RC::INVALID_ARGUMENT;
   }
 
@@ -52,23 +58,26 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
     return RC::SCHEMA_FIELD_NOT_EXIST;
   }
 
-  Value value = update_sql.value;
-  if (field->type() != value.attr_type()) {
-    Value cast_value;
-    RC    rc = Value::cast_to(value, field->type(), cast_value);
-    if (OB_FAIL(rc)) {
-      LOG_WARN("failed to cast update value. table=%s, field=%s, rc=%s",
-          table_name, field->name(), strrc(rc));
-      return rc;
-    }
-    value = cast_value;
+  BinderContext binder_context;
+  binder_context.add_table(table);
+  ExpressionBinder expression_binder(binder_context, db);
+
+  vector<unique_ptr<Expression>> bound_expressions;
+  RC                             rc = expression_binder.bind_expression(update_sql.value_expr, bound_expressions);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to bind update value expression. rc=%s", strrc(rc));
+    return rc;
+  }
+  if (bound_expressions.size() != 1) {
+    LOG_WARN("invalid bound update value expression count: %d", bound_expressions.size());
+    return RC::INVALID_ARGUMENT;
   }
 
   unordered_map<string, Table *> table_map;
   table_map.emplace(table_name, table);
 
   FilterStmt *filter_stmt = nullptr;
-  RC          rc          = FilterStmt::create(db,
+  rc                      = FilterStmt::create(db,
       table,
       &table_map,
       update_sql.conditions.data(),
@@ -79,6 +88,6 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
     return rc;
   }
 
-  stmt = new UpdateStmt(table, filter_stmt, field, value);
+  stmt = new UpdateStmt(table, filter_stmt, field, std::move(bound_expressions[0]));
   return RC::SUCCESS;
 }

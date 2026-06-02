@@ -344,6 +344,16 @@
       "timeout_sec": 30
     },
     {
+      "id": "custom-update-select",
+      "name": "update-select.sql",
+      "category": "custom",
+      "feature": "update-select",
+      "points": 4,
+      "file": "lab/test/cases/sql/update-select.sql",
+      "expected_failure": 2,
+      "timeout_sec": 60
+    },
+    {
       "id": "stress-big-write",
       "name": "big-write (500 ops)",
       "category": "stress",
@@ -364,6 +374,18 @@
       "expected_rows": 1680,
       "restart_check": false,
       "timeout_sec": 300,
+      "tags": ["slow"]
+    },
+    {
+      "id": "stress-big-query",
+      "name": "big-query (800 rows + join/group/subquery)",
+      "category": "stress",
+      "feature": "big-query",
+      "points": 5,
+      "generator": "lab/test/stress/gen_big_query_sql.py",
+      "expected_rows": 800,
+      "restart_check": false,
+      "timeout_sec": 90,
       "tags": ["slow"]
     }
   ]
