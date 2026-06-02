@@ -63,9 +63,12 @@ public:
   RC open(Trx *trx);
   RC close();
 
-  RC materialize_all_values(vector<Value> &values) const;
+  RC materialize_all_values(vector<Value> &values, const Tuple *outer_tuple = nullptr) const;
 
-  RC materialize_scalar() const;
+  RC materialize_scalar(const Tuple *outer_tuple = nullptr) const;
+
+  void set_correlated(bool correlated) { correlated_ = correlated; }
+  bool correlated() const { return correlated_; }
 
   SelectStmt *select_stmt() const { return select_stmt_.get(); }
 
@@ -82,7 +85,12 @@ private:
   mutable bool                        scalar_materialized_ = false;
   mutable bool                        scalar_empty_ = false;
   mutable Value                       scalar_cache_;
+  bool                                correlated_ = false;
 };
+
+const Tuple *subquery_outer_tuple();
+
+bool select_stmt_has_correlation(const SelectStmt *select_stmt);
 
 /**
  * @brief expr IN (SELECT ...) / NOT IN

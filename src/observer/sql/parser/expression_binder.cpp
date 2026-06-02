@@ -27,10 +27,19 @@ Table *BinderContext::find_table(const char *table_name) const
 {
   auto pred = [table_name](Table *table) { return 0 == strcasecmp(table_name, table->name()); };
   auto iter = ranges::find_if(query_tables_, pred);
-  if (iter == query_tables_.end()) {
-    return nullptr;
+  if (iter != query_tables_.end()) {
+    return *iter;
   }
-  return *iter;
+  if (parent_ != nullptr) {
+    return parent_->find_table(table_name);
+  }
+  return nullptr;
+}
+
+bool BinderContext::is_local_table(Table *table) const
+{
+  auto iter = ranges::find(query_tables_, table);
+  return iter != query_tables_.end();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -195,6 +204,9 @@ RC ExpressionBinder::bind_unbound_field_expression(
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
     field_expr->set_name(field_name);
+    if (!context_.is_local_table(table)) {
+      field_expr->set_outer_ref(true);
+    }
     bound_expressions.emplace_back(field_expr);
   }
 
@@ -542,7 +554,7 @@ RC ExpressionBinder::bind_subquery_expression(
 
   auto unbound_expr = static_cast<UnboundSubQueryExpr *>(expr.get());
   Stmt *stmt        = nullptr;
-  RC    rc          = SelectStmt::create(db_, unbound_expr->select_sql(), stmt);
+  RC    rc          = SelectStmt::create(db_, unbound_expr->select_sql(), stmt, &context_);
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to create subquery select stmt. rc=%s", strrc(rc));
     return rc;
@@ -568,6 +580,8 @@ RC ExpressionBinder::bind_subquery_expression(
 
   bound_expressions.emplace_back(
       make_unique<SubQueryExpr>(std::move(select_stmt), std::move(value_expr_copy)));
+  auto &subquery_expr = static_cast<SubQueryExpr &>(*bound_expressions.back());
+  subquery_expr.set_correlated(select_stmt_has_correlation(subquery_expr.select_stmt()));
   return RC::SUCCESS;
 }
 

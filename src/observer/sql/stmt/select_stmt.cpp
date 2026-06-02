@@ -33,7 +33,7 @@ SelectStmt::~SelectStmt()
   }
 }
 
-RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
+RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt, BinderContext *parent_context)
 {
   if (nullptr == db) {
     LOG_WARN("invalid argument. db is null");
@@ -41,6 +41,9 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   }
 
   BinderContext binder_context;
+  if (parent_context != nullptr) {
+    binder_context.set_parent(parent_context);
+  }
 
   // collect tables in `from` statement
   vector<Table *>                tables;

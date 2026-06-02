@@ -26,12 +26,19 @@ public:
 
   void add_table(Table *table) { query_tables_.push_back(table); }
 
+  void set_parent(BinderContext *parent) { parent_ = parent; }
+
+  BinderContext *parent() const { return parent_; }
+
   Table *find_table(const char *table_name) const;
+
+  bool is_local_table(Table *table) const;
 
   const vector<Table *> &query_tables() const { return query_tables_; }
 
 private:
   vector<Table *> query_tables_;
+  BinderContext  *parent_ = nullptr;
 };
 
 /**

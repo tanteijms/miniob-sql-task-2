@@ -27,7 +27,7 @@ static RC get_comparison_operand_value(const Tuple &tuple, Expression &expr, Val
 {
   if (expr.type() == ExprType::SUBQUERY) {
     vector<Value> values;
-    RC            rc = static_cast<SubQueryExpr &>(expr).materialize_all_values(values);
+    RC            rc = static_cast<SubQueryExpr &>(expr).materialize_all_values(values, &tuple);
     if (OB_FAIL(rc)) {
       return rc;
     }
@@ -45,6 +45,13 @@ static RC get_comparison_operand_value(const Tuple &tuple, Expression &expr, Val
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
 {
+  if (outer_ref_) {
+    const Tuple *outer = subquery_outer_tuple();
+    if (outer == nullptr) {
+      return RC::INVALID_ARGUMENT;
+    }
+    return outer->find_cell(TupleCellSpec(table_name(), field_name()), value);
+  }
   return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
 }
 

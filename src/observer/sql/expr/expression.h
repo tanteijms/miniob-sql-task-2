@@ -205,7 +205,12 @@ public:
 
   bool equal(const Expression &other) const override;
 
-  unique_ptr<Expression> copy() const override { return make_unique<FieldExpr>(field_); }
+  unique_ptr<Expression> copy() const override
+  {
+    auto copied = make_unique<FieldExpr>(field_);
+    copied->set_outer_ref(outer_ref_);
+    return copied;
+  }
 
   ExprType type() const override { return ExprType::FIELD; }
   AttrType value_type() const override { return field_.attr_type(); }
@@ -222,8 +227,12 @@ public:
 
   RC get_value(const Tuple &tuple, Value &value) const override;
 
+  void set_outer_ref(bool outer_ref) { outer_ref_ = outer_ref; }
+  bool outer_ref() const { return outer_ref_; }
+
 private:
   Field field_;
+  bool  outer_ref_ = false;
 };
 
 /**

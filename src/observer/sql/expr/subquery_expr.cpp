@@ -20,6 +20,91 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
+namespace {
+
+thread_local vector<const Tuple *> g_subquery_outer_stack;
+
+class SubQueryOuterContext
+{
+public:
+  explicit SubQueryOuterContext(const Tuple *outer_tuple) : pushed_(false)
+  {
+    if (outer_tuple != nullptr && g_subquery_outer_stack.empty()) {
+      g_subquery_outer_stack.push_back(outer_tuple);
+      pushed_ = true;
+    }
+  }
+  ~SubQueryOuterContext()
+  {
+    if (pushed_) {
+      g_subquery_outer_stack.pop_back();
+    }
+  }
+
+private:
+  bool pushed_;
+};
+
+static bool expression_has_correlation(const Expression &expr)
+{
+  if (expr.type() == ExprType::FIELD) {
+    return static_cast<const FieldExpr &>(expr).outer_ref();
+  }
+  if (expr.type() == ExprType::SUBQUERY) {
+    return static_cast<const SubQueryExpr &>(expr).correlated();
+  }
+
+  bool found = false;
+  RC   rc    = ExpressionIterator::iterate_child_expr(
+      const_cast<Expression &>(expr), [&](unique_ptr<Expression> &child) -> RC {
+        if (child != nullptr && expression_has_correlation(*child)) {
+          found = true;
+        }
+        return RC::SUCCESS;
+      });
+  (void)rc;
+  return found;
+}
+
+}  // namespace
+
+bool select_stmt_has_correlation(const SelectStmt *select_stmt)
+{
+  if (select_stmt == nullptr) {
+    return false;
+  }
+
+  if (select_stmt->where_expression() &&
+      expression_has_correlation(*select_stmt->where_expression())) {
+    return true;
+  }
+  if (select_stmt->having_expression() &&
+      expression_has_correlation(*select_stmt->having_expression())) {
+    return true;
+  }
+  for (const unique_ptr<Expression> &expr : select_stmt->query_expressions()) {
+    if (expr && expression_has_correlation(*expr)) {
+      return true;
+    }
+  }
+  for (const vector<unique_ptr<Expression>> &join_preds : select_stmt->join_predicates()) {
+    for (const unique_ptr<Expression> &expr : join_preds) {
+      if (expr && expression_has_correlation(*expr)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const Tuple *subquery_outer_tuple()
+{
+  if (g_subquery_outer_stack.empty()) {
+    return nullptr;
+  }
+  return g_subquery_outer_stack.back();
+}
+
 UnboundSubQueryExpr::UnboundSubQueryExpr(SelectSqlNode &&select_sql) : select_sql_(std::move(select_sql)) {}
 
 unique_ptr<Expression> UnboundSubQueryExpr::copy() const
@@ -71,14 +156,21 @@ RC SubQueryExpr::close()
   return rc;
 }
 
-RC SubQueryExpr::materialize_all_values(vector<Value> &values) const
+RC SubQueryExpr::materialize_all_values(vector<Value> &values, const Tuple *outer_tuple) const
 {
   if (physical_operator_ == nullptr) {
     return RC::INTERNAL;
   }
 
+  SubQueryOuterContext outer_context(outer_tuple);
+
   SubQueryExpr *self = const_cast<SubQueryExpr *>(this);
-  RC            rc   = self->close();
+  if (correlated_) {
+    self->scalar_materialized_ = false;
+    self->scalar_empty_        = false;
+  }
+
+  RC rc = self->close();
   if (OB_FAIL(rc)) {
     return rc;
   }
@@ -125,14 +217,17 @@ RC SubQueryExpr::materialize_all_values(vector<Value> &values) const
   return rc;
 }
 
-RC SubQueryExpr::materialize_scalar() const
+RC SubQueryExpr::materialize_scalar(const Tuple *outer_tuple) const
 {
-  if (scalar_materialized_) {
+  if (correlated_) {
+    scalar_materialized_ = false;
+    scalar_empty_        = false;
+  } else if (scalar_materialized_) {
     return RC::SUCCESS;
   }
 
   vector<Value> values;
-  RC            rc = materialize_all_values(values);
+  RC            rc = materialize_all_values(values, outer_tuple);
   if (OB_FAIL(rc)) {
     return rc;
   }
@@ -154,10 +249,25 @@ RC SubQueryExpr::materialize_scalar() const
 
 RC SubQueryExpr::get_value(const Tuple &tuple, Value &value) const
 {
-  (void)tuple;
+  if (correlated_) {
+    vector<Value> values;
+    RC            rc = materialize_all_values(values, &tuple);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    if (values.size() > 1) {
+      return RC::INVALID_ARGUMENT;
+    }
+    if (values.empty()) {
+      return RC::INVALID_ARGUMENT;
+    }
+    value = values[0];
+    return RC::SUCCESS;
+  }
+
   if (!scalar_materialized_) {
     vector<Value> values;
-    RC            rc = materialize_all_values(values);
+    RC            rc = materialize_all_values(values, nullptr);
     if (OB_FAIL(rc)) {
       return rc;
     }
@@ -216,13 +326,16 @@ RC InSubQueryExpr::get_value(const Tuple &tuple, Value &value) const
     return RC::INTERNAL;
   }
   SubQueryExpr *subquery = static_cast<SubQueryExpr *>(subquery_.get());
+  bool          correlated = subquery->correlated();
 
-  if (!materialized_) {
-    rc = subquery->materialize_all_values(cached_values_);
+  if (!materialized_ || correlated) {
+    rc = subquery->materialize_all_values(cached_values_, &tuple);
     if (OB_FAIL(rc)) {
       return rc;
     }
-    materialized_ = true;
+    if (!correlated) {
+      materialized_ = true;
+    }
   }
 
   bool found = false;
