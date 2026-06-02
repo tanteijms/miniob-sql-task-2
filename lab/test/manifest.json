@@ -103,6 +103,16 @@
       "timeout_sec": 30
     },
     {
+      "id": "official-unique",
+      "name": "primary-unique",
+      "category": "official",
+      "feature": "unique",
+      "points": 2,
+      "file": "test/case/test/primary-unique.test",
+      "expected_failure": 2,
+      "timeout_sec": 30
+    },
+    {
       "id": "custom-basic",
       "name": "basic.sql",
       "category": "custom",
@@ -255,6 +265,23 @@
       "file": "lab/test/cases/sql/multi-index.sql",
       "expected_failure": 1,
       "timeout_sec": 60
+    },
+    {
+      "id": "custom-unique",
+      "name": "unique.sql",
+      "category": "custom",
+      "feature": "unique",
+      "points": 2,
+      "file": "lab/test/cases/sql/unique.sql",
+      "expected_failure": 2,
+      "timeout_sec": 30,
+      "assertions": [
+        {
+          "name": "row count",
+          "sql": "SELECT count(*) FROM unique_table;",
+          "rows": [["3"]]
+        }
+      ]
     },
     {
       "id": "stress-big-write",

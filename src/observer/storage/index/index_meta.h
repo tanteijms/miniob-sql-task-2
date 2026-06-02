@@ -36,14 +36,15 @@ class IndexMeta
 public:
   IndexMeta() = default;
 
-  RC init(const char *name, const FieldMeta &field);
-  RC init(const char *name, const vector<const FieldMeta *> &fields);
+  RC init(const char *name, const FieldMeta &field, bool unique = false);
+  RC init(const char *name, const vector<const FieldMeta *> &fields, bool unique = false);
 
 public:
   const char *name() const;
   const char *field() const;
   const vector<string> &fields() const { return fields_; }
   int field_num() const { return static_cast<int>(fields_.size()); }
+  bool unique() const { return unique_; }
 
   void desc(ostream &os) const;
 
@@ -54,4 +55,5 @@ public:
 protected:
   string         name_;    // index's name
   vector<string> fields_;  // field names in key order
+  bool           unique_ = false;
 };

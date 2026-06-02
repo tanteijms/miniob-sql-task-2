@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "storage/table/table.h"
 #include "storage/db/db.h"
+#include <list>
 
 BplusTreeIndex::~BplusTreeIndex() noexcept { close(); }
 
@@ -97,6 +98,16 @@ RC BplusTreeIndex::close()
 RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 {
   make_key(record, key_buffer_.data());
+  if (index_meta_.unique()) {
+    list<RID> existing_rids;
+    RC rc = index_handler_.get_entry(key_buffer_.data(), attr_length_, existing_rids);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    if (!existing_rids.empty()) {
+      return RC::RECORD_DUPLICATE_KEY;
+    }
+  }
   return index_handler_.insert_entry(key_buffer_.data(), rid);
 }
 

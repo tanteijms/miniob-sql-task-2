@@ -211,6 +211,7 @@ struct CreateIndexSqlNode
   string         index_name;      ///< Index name
   string         relation_name;   ///< Relation name
   vector<string> attribute_names; ///< Attribute names (composite index)
+  bool           unique = false;  ///< UNIQUE index
 };
 
 /**
