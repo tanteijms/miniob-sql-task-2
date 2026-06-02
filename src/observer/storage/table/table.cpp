@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 
 #include "common/defs.h"
+#include "common/lang/filesystem.h"
 #include "common/lang/string.h"
 #include "common/lang/span.h"
 #include "common/lang/algorithm.h"
@@ -170,6 +171,45 @@ RC Table::open(Db *db, const char *meta_file, const char *base_dir)
   }
 
   return rc;
+}
+
+RC Table::drop()
+{
+  RC rc = sync();
+  if (OB_FAIL(rc)) {
+    LOG_ERROR("Failed to sync table before drop. table=%s, rc=%s", name(), strrc(rc));
+    return rc;
+  }
+
+  const string table_name = name();
+  const string base_dir   = db_->path();
+
+  vector<string> index_names;
+  index_names.reserve(table_meta_.index_num());
+  for (int i = 0; i < table_meta_.index_num(); i++) {
+    const IndexMeta *index_meta = table_meta_.index(i);
+    if (index_meta != nullptr) {
+      index_names.emplace_back(index_meta->name());
+    }
+  }
+
+  engine_.reset();
+
+  if (lob_handler_ != nullptr) {
+    delete lob_handler_;
+    lob_handler_ = nullptr;
+  }
+
+  error_code ec;
+  filesystem::remove(table_meta_file(base_dir.c_str(), table_name.c_str()), ec);
+  filesystem::remove(table_data_file(base_dir.c_str(), table_name.c_str()), ec);
+  filesystem::remove(table_lob_file(base_dir.c_str(), table_name.c_str()), ec);
+  for (const string &index_name : index_names) {
+    filesystem::remove(table_index_file(base_dir.c_str(), table_name.c_str(), index_name.c_str()), ec);
+  }
+
+  LOG_INFO("Drop table files removed. table=%s", table_name.c_str());
+  return RC::SUCCESS;
 }
 
 RC Table::insert_record(Record &record)
