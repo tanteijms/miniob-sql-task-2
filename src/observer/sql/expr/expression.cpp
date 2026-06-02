@@ -13,6 +13,8 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/expr/expression.h"
+
+#include "sql/expr/like_match.h"
 #include "sql/expr/tuple.h"
 #include "sql/expr/arithmetic_operator.hpp"
 
@@ -162,6 +164,14 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
     } break;
     case GREAT_THAN: {
       result = (cmp_result > 0);
+    } break;
+    case LIKE_OP: {
+      if (left.attr_type() != AttrType::CHARS || right.attr_type() != AttrType::CHARS) {
+        LOG_WARN("LIKE only supports CHAR type. left=%s, right=%s",
+            attr_type_to_string(left.attr_type()), attr_type_to_string(right.attr_type()));
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      result = like_match(left.get_string(), right.get_string());
     } break;
     default: {
       LOG_WARN("unsupported comparison. %d", comp_);
