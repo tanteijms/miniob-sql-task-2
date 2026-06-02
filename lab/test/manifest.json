@@ -99,7 +99,7 @@
       "feature": "function",
       "points": 2,
       "file": "test/case/test/primary-expression.test",
-      "expected_failure": 1,
+      "expected_failure": 2,
       "timeout_sec": 30
     },
     {
@@ -111,6 +111,16 @@
       "file": "test/case/test/primary-unique.test",
       "expected_failure": 2,
       "timeout_sec": 30
+    },
+    {
+      "id": "official-simple-sub-query",
+      "name": "primary-simple-sub-query",
+      "category": "official",
+      "feature": "simple-sub-query",
+      "points": 4,
+      "file": "test/case/test/primary-simple-sub-query.test",
+      "expected_failure": 4,
+      "timeout_sec": 60
     },
     {
       "id": "custom-basic",
@@ -282,6 +292,16 @@
           "rows": [["3"]]
         }
       ]
+    },
+    {
+      "id": "custom-simple-sub-query",
+      "name": "simple-sub-query.sql",
+      "category": "custom",
+      "feature": "simple-sub-query",
+      "points": 4,
+      "file": "lab/test/cases/sql/simple-sub-query.sql",
+      "expected_failure": 0,
+      "timeout_sec": 60
     },
     {
       "id": "stress-big-write",

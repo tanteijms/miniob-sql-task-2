@@ -36,6 +36,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/sort_physical_operator.h"
 #include "sql/operator/predicate_logical_operator.h"
 #include "sql/operator/predicate_physical_operator.h"
+#include "sql/expr/subquery_expr.h"
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/project_physical_operator.h"
 #include "sql/operator/project_vec_physical_operator.h"
@@ -221,6 +222,12 @@ RC PhysicalPlanGenerator::create_plan(PredicateLogicalOperator &pred_oper, uniqu
   ASSERT(expressions.size() == 1, "predicate logical operator's children should be 1");
 
   unique_ptr<Expression> expression = std::move(expressions.front());
+  RC                     prep_rc    = prepare_subquery_expressions(*expression, session);
+  if (OB_FAIL(prep_rc)) {
+    LOG_WARN("failed to prepare subquery expressions. rc=%s", strrc(prep_rc));
+    return prep_rc;
+  }
+
   oper = unique_ptr<PhysicalOperator>(new PredicatePhysicalOperator(std::move(expression)));
   oper->add_child(std::move(child_phy_oper));
   return rc;

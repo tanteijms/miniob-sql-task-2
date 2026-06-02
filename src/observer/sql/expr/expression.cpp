@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 
+#include "sql/expr/subquery_expr.h"
 #include "sql/expr/sql_function.h"
 
 #include "sql/expr/like_match.h"
@@ -21,6 +22,26 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/arithmetic_operator.hpp"
 
 using namespace std;
+
+static RC get_comparison_operand_value(const Tuple &tuple, Expression &expr, Value &value)
+{
+  if (expr.type() == ExprType::SUBQUERY) {
+    vector<Value> values;
+    RC            rc = static_cast<SubQueryExpr &>(expr).materialize_all_values(values);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    if (values.size() != 1) {
+      return RC::INVALID_ARGUMENT;
+    }
+    value = values[0];
+    return RC::SUCCESS;
+  }
+  if (expr.type() == ExprType::UNBOUND_SUBQUERY) {
+    return RC::INTERNAL;
+  }
+  return expr.get_value(tuple, value);
+}
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
 {
@@ -210,12 +231,12 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
   Value left_value;
   Value right_value;
 
-  RC rc = left_->get_value(tuple, left_value);
+  RC rc = get_comparison_operand_value(tuple, *left_, left_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
-  rc = right_->get_value(tuple, right_value);
+  rc = get_comparison_operand_value(tuple, *right_, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;

@@ -99,16 +99,22 @@ RC LogicalPlanGenerator::create_plan(CalcStmt *calc_stmt, unique_ptr<LogicalOper
 
 RC LogicalPlanGenerator::create_plan(SelectStmt *select_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
+  RC rc = RC::SUCCESS;
+
   unique_ptr<LogicalOperator> *last_oper = nullptr;
 
   unique_ptr<LogicalOperator> table_oper(nullptr);
   last_oper = &table_oper;
   unique_ptr<LogicalOperator> predicate_oper;
 
-  RC rc = create_plan(select_stmt->filter_stmt(), predicate_oper);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("failed to create predicate logical plan. rc=%s", strrc(rc));
-    return rc;
+  if (select_stmt->where_expression()) {
+    predicate_oper = make_unique<PredicateLogicalOperator>(std::move(select_stmt->where_expression()));
+  } else if (select_stmt->filter_stmt() != nullptr) {
+    rc = create_plan(select_stmt->filter_stmt(), predicate_oper);
+    if (OB_FAIL(rc)) {
+      LOG_WARN("failed to create predicate logical plan. rc=%s", strrc(rc));
+      return rc;
+    }
   }
 
   const vector<Table *> &tables = select_stmt->tables();

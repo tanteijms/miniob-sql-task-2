@@ -107,7 +107,8 @@ struct SelectSqlNode
   vector<unique_ptr<Expression>> expressions;  ///< 查询的表达式
   vector<string>                 relations;    ///< 查询的表（与 from.relations 同步）
   vector<vector<ConditionSqlNode>> join_conditions;  ///< 见 FromSqlNode
-  vector<ConditionSqlNode>       conditions;   ///< 查询条件，使用AND串联起来多个条件
+  vector<ConditionSqlNode>       conditions;   ///< 旧式 WHERE（兼容 delete/update）
+  vector<unique_ptr<Expression>> filter_exprs; ///< 表达式 WHERE（SELECT 子查询等）
   vector<unique_ptr<Expression>> group_by;     ///< group by clause
   vector<unique_ptr<Expression>> having;       ///< having clause (ComparisonExpr list, AND)
   vector<OrderBySqlNode>         order_by;     ///< order by clause

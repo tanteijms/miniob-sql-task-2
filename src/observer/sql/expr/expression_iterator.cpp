@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression_iterator.h"
 #include "sql/expr/expression.h"
+#include "sql/expr/subquery_expr.h"
 #include "common/log/log.h"
 
 using namespace std;
@@ -83,9 +84,19 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, function<RC(unique_p
       }
     } break;
 
+    case ExprType::IN_SUBQUERY: {
+      auto &in_expr = static_cast<InSubQueryExpr &>(expr);
+      rc            = callback(in_expr.left());
+      if (OB_SUCC(rc)) {
+        rc = callback(in_expr.subquery());
+      }
+    } break;
+
     case ExprType::NONE:
     case ExprType::STAR:
     case ExprType::UNBOUND_FIELD:
+    case ExprType::UNBOUND_SUBQUERY:
+    case ExprType::SUBQUERY:
     case ExprType::FIELD:
     case ExprType::VALUE: {
       // Do nothing

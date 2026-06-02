@@ -1,0 +1,13 @@
+CREATE TABLE ssq_1(id int, col1 int, feat1 float);
+CREATE TABLE ssq_2(id int, col2 int, feat2 float);
+INSERT INTO ssq_1 VALUES (1, 4, 11.2);
+INSERT INTO ssq_1 VALUES (2, 2, 12.0);
+INSERT INTO ssq_2 VALUES (1, 2, 13.0);
+INSERT INTO ssq_2 VALUES (2, 7, 10.5);
+INSERT INTO ssq_2 VALUES (5, 3, 12.6);
+SELECT * FROM ssq_1 WHERE id IN (SELECT ssq_2.id FROM ssq_2);
+SELECT * FROM ssq_1 WHERE col1 NOT IN (SELECT ssq_2.col2 FROM ssq_2);
+SELECT * FROM ssq_1 WHERE col1 = (SELECT avg(ssq_2.col2) FROM ssq_2);
+SELECT * FROM ssq_1 WHERE feat1 >= (SELECT min(ssq_2.feat2) FROM ssq_2);
+SELECT * FROM ssq_1 WHERE id IN (SELECT ssq_2.id FROM ssq_2 WHERE 1=0);
+SELECT * FROM ssq_1 WHERE id NOT IN (SELECT ssq_2.id FROM ssq_2 WHERE 1=0);

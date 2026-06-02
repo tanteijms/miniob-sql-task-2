@@ -65,7 +65,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
 
   // collect query fields in `select` statement
   vector<unique_ptr<Expression>> bound_expressions;
-  ExpressionBinder expression_binder(binder_context);
+  ExpressionBinder expression_binder(binder_context, db);
   
   for (unique_ptr<Expression> &expression : select_sql.expressions) {
     RC rc = expression_binder.bind_expression(expression, bound_expressions);
@@ -160,17 +160,40 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     join_predicates.push_back(std::move(cmp_exprs));
   }
 
-  // create filter statement in `where` statement
-  FilterStmt *filter_stmt = nullptr;
-  RC          rc          = FilterStmt::create(db,
-      default_table,
-      &table_map,
-      select_sql.conditions.data(),
-      static_cast<int>(select_sql.conditions.size()),
-      filter_stmt);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("cannot construct filter stmt");
-    return rc;
+  // create filter in `where` statement
+  FilterStmt            *filter_stmt      = nullptr;
+  unique_ptr<Expression> where_expression;
+  if (!select_sql.filter_exprs.empty()) {
+    vector<unique_ptr<Expression>> bound_filters;
+    for (unique_ptr<Expression> &expression : select_sql.filter_exprs) {
+      vector<unique_ptr<Expression>> bound;
+      RC                             rc = expression_binder.bind_expression(expression, bound);
+      if (OB_FAIL(rc)) {
+        LOG_INFO("bind where expression failed. rc=%s", strrc(rc));
+        return rc;
+      }
+      if (bound.size() != 1) {
+        LOG_WARN("invalid where expression number: %d", bound.size());
+        return RC::INVALID_ARGUMENT;
+      }
+      bound_filters.emplace_back(std::move(bound[0]));
+    }
+    if (bound_filters.size() == 1) {
+      where_expression = std::move(bound_filters[0]);
+    } else {
+      where_expression = make_unique<ConjunctionExpr>(ConjunctionExpr::Type::AND, bound_filters);
+    }
+  } else {
+    RC rc = FilterStmt::create(db,
+        default_table,
+        &table_map,
+        select_sql.conditions.data(),
+        static_cast<int>(select_sql.conditions.size()),
+        filter_stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("cannot construct filter stmt");
+      return rc;
+    }
   }
 
   // everything alright
@@ -178,7 +201,8 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
 
   select_stmt->tables_.swap(tables);
   select_stmt->query_expressions_.swap(bound_expressions);
-  select_stmt->filter_stmt_ = filter_stmt;
+  select_stmt->filter_stmt_      = filter_stmt;
+  select_stmt->where_expression_ = std::move(where_expression);
   select_stmt->group_by_.swap(group_by_expressions);
   select_stmt->join_predicates_.swap(join_predicates);
   select_stmt->order_by_.swap(order_by_expressions);

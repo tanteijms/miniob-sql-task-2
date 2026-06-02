@@ -11,6 +11,8 @@
 #include "sql/parser/yacc_sql.hpp"
 #include "sql/parser/lex_sql.h"
 #include "sql/expr/expression.h"
+#include "sql/expr/subquery_expr.h"
+#include "sql/parser/parse_defs.h"
 
 using namespace std;
 
@@ -96,6 +98,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         DROP
         GROUP
         HAVING
+        IN
+        NOT
         TABLE
         TABLES
         INDEX
@@ -212,6 +216,11 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <value_list>          value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
+%type <expression_list>     select_where
+%type <expression_list>     subquery_where
+%type <expression_list>     where_predicate_list
+%type <expression>          where_predicate
+%type <expression>          select_subquery
 %type <cstring>             storage_format
 %type <key_list>            primary_key
 %type <key_list>            attr_list
@@ -548,7 +557,7 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT expression_list FROM from_list where group_by having order_by
+    SELECT expression_list FROM from_list select_where group_by having order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -563,7 +572,7 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       if ($5 != nullptr) {
-        $$->selection.conditions.swap(*$5);
+        $$->selection.filter_exprs.swap(*$5);
         delete $5;
       }
 
@@ -620,6 +629,10 @@ expression:
     }
     | expression '/' expression {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::DIV, $1, $3, sql_string, &@$);
+    }
+    | LBRACE select_subquery RBRACE {
+      $$ = $2;
+      $$->set_name(token_name(sql_string, &@$));
     }
     | LBRACE expression RBRACE {
       $$ = $2;
@@ -735,6 +748,138 @@ where:
       $$ = $2;  
     }
     ;
+
+select_where:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | WHERE where_predicate_list {
+      $$ = $2;
+    }
+    ;
+
+where_predicate_list:
+    where_predicate {
+      $$ = new vector<unique_ptr<Expression>>;
+      $$->emplace_back($1);
+    }
+    | where_predicate AND where_predicate_list {
+      $$ = $3;
+      $$->emplace($$->begin(), $1);
+    }
+    ;
+
+where_predicate:
+    rel_attr comp_op expression
+    {
+      RelAttrSqlNode *attr = $1;
+      $$ = create_comparison_expression($2,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          $3, sql_string, &@$);
+      delete $1;
+    }
+    | expression comp_op rel_attr
+    {
+      RelAttrSqlNode *attr = $3;
+      $$ = create_comparison_expression($2, $1,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          sql_string, &@$);
+      delete $3;
+    }
+    | LBRACE select_subquery RBRACE comp_op expression
+    {
+      $$ = create_comparison_expression($4, $2, $5, sql_string, &@$);
+    }
+    | LBRACE select_subquery RBRACE comp_op rel_attr
+    {
+      RelAttrSqlNode *attr = $5;
+      $$ = create_comparison_expression($4, $2,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          sql_string, &@$);
+      delete $5;
+    }
+    | rel_attr comp_op value
+    {
+      RelAttrSqlNode *attr = $1;
+      $$ = create_comparison_expression($2,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          new ValueExpr(*$3), sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | value comp_op value
+    {
+      $$ = create_comparison_expression($2, new ValueExpr(*$1), new ValueExpr(*$3), sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | rel_attr comp_op rel_attr
+    {
+      RelAttrSqlNode *lattr = $1;
+      RelAttrSqlNode *rattr = $3;
+      $$ = create_comparison_expression($2,
+          new UnboundFieldExpr(lattr->relation_name, lattr->attribute_name),
+          new UnboundFieldExpr(rattr->relation_name, rattr->attribute_name),
+          sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | value comp_op rel_attr
+    {
+      RelAttrSqlNode *attr = $3;
+      $$ = create_comparison_expression($2,
+          new ValueExpr(*$1),
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | expression comp_op expression
+    {
+      $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
+    }
+    | expression IN LBRACE select_subquery RBRACE
+    {
+      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), unique_ptr<Expression>($4), false);
+    }
+    | expression NOT IN LBRACE select_subquery RBRACE
+    {
+      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), unique_ptr<Expression>($5), true);
+    }
+    ;
+
+select_subquery:
+    SELECT expression_list FROM from_list subquery_where
+    {
+      SelectSqlNode node;
+      if ($2 != nullptr) {
+        node.expressions.swap(*$2);
+        delete $2;
+      }
+      if ($4 != nullptr) {
+        node.relations.swap($4->relations);
+        node.join_conditions.swap($4->join_conditions);
+        delete $4;
+      }
+      if ($5 != nullptr) {
+        node.filter_exprs.swap(*$5);
+        delete $5;
+      }
+      $$ = new UnboundSubQueryExpr(std::move(node));
+    }
+    ;
+
+subquery_where:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | WHERE where_predicate_list {
+      $$ = $2;
+    }
+    ;
+
 condition_list:
     /* empty */
     {

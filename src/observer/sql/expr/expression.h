@@ -49,6 +49,9 @@ enum class ExprType
   ARITHMETIC,   ///< 算术运算
   AGGREGATION,  ///< 聚合运算
   FUNCTION,     ///< 标量函数 length/round/date_format
+  UNBOUND_SUBQUERY,  ///< 未绑定子查询
+  SUBQUERY,          ///< 已绑定子查询
+  IN_SUBQUERY,       ///< IN / NOT IN 子查询
 };
 
 /**

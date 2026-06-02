@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/operator/predicate_physical_operator.h"
+#include "sql/expr/subquery_expr.h"
 #include "common/log/log.h"
 #include "sql/stmt/filter_stmt.h"
 #include "storage/field/field.h"
@@ -30,7 +31,12 @@ RC PredicatePhysicalOperator::open(Trx *trx)
     return RC::INTERNAL;
   }
 
-  return children_[0]->open(trx);
+  RC rc = children_[0]->open(trx);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+
+  return open_subquery_expressions(*expression_, trx);
 }
 
 RC PredicatePhysicalOperator::next()
@@ -61,6 +67,7 @@ RC PredicatePhysicalOperator::next()
 
 RC PredicatePhysicalOperator::close()
 {
+  close_subquery_expressions(*expression_);
   children_[0]->close();
   return RC::SUCCESS;
 }

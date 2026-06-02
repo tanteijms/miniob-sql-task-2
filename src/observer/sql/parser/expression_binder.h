@@ -16,6 +16,8 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 
+class Db;
+
 class BinderContext
 {
 public:
@@ -39,7 +41,7 @@ private:
 class ExpressionBinder
 {
 public:
-  ExpressionBinder(BinderContext &context) : context_(context) {}
+  ExpressionBinder(BinderContext &context, Db *db = nullptr) : context_(context), db_(db) {}
   virtual ~ExpressionBinder() = default;
 
   RC bind_expression(unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions);
@@ -61,7 +63,12 @@ private:
       unique_ptr<Expression> &aggregate_expr, vector<unique_ptr<Expression>> &bound_expressions);
   RC bind_function_expression(
       unique_ptr<Expression> &function_expr, vector<unique_ptr<Expression>> &bound_expressions);
+  RC bind_subquery_expression(
+      unique_ptr<Expression> &subquery_expr, vector<unique_ptr<Expression>> &bound_expressions);
+  RC bind_in_subquery_expression(
+      unique_ptr<Expression> &in_expr, vector<unique_ptr<Expression>> &bound_expressions);
 
 private:
   BinderContext &context_;
+  Db            *db_ = nullptr;
 };

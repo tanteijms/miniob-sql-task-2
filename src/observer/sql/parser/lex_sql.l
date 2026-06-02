@@ -128,6 +128,8 @@ INFILE                                  RETURN_TOKEN(INFILE);
 EXPLAIN                                 RETURN_TOKEN(EXPLAIN);
 GROUP                                   RETURN_TOKEN(GROUP);
 HAVING                                  RETURN_TOKEN(HAVING);
+IN                                      RETURN_TOKEN(IN);
+NOT                                     RETURN_TOKEN(NOT);
 BY                                      RETURN_TOKEN(BY);
 STORAGE                                 RETURN_TOKEN(STORAGE);
 FORMAT                                  RETURN_TOKEN(FORMAT);
