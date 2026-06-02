@@ -591,18 +591,17 @@ bool AggregateExpr::equal(const Expression &other) const
 
 unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
 {
-  unique_ptr<Aggregator> aggregator;
   switch (aggregate_type_) {
-    case Type::SUM: {
-      aggregator = make_unique<SumAggregator>();
-      break;
-    }
+    case Type::SUM: return make_unique<SumAggregator>();
+    case Type::COUNT: return make_unique<CountAggregator>();
+    case Type::AVG: return make_unique<AvgAggregator>();
+    case Type::MAX: return make_unique<MaxAggregator>();
+    case Type::MIN: return make_unique<MinAggregator>();
     default: {
       ASSERT(false, "unsupported aggregate type");
-      break;
+      return nullptr;
     }
   }
-  return aggregator;
 }
 
 RC AggregateExpr::get_value(const Tuple &tuple, Value &value) const

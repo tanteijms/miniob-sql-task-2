@@ -82,10 +82,15 @@ RC ScalarGroupByPhysicalOperator::open(Trx *trx)
     return rc;
   }
 
-  // 得到最终聚合后的值
-  if (group_value_) {
-    rc = evaluate(*group_value_);
+  // 空表也要输出一行聚合结果（如 count(*) = 0）
+  if (group_value_ == nullptr) {
+    AggregatorList aggregator_list;
+    create_aggregator_list(aggregator_list);
+    CompositeTuple composite_tuple;
+    group_value_ = make_unique<GroupValueType>(std::move(aggregator_list), std::move(composite_tuple));
   }
+
+  rc = evaluate(*group_value_);
 
   emitted_ = false;
   return rc;
