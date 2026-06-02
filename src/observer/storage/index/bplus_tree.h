@@ -56,29 +56,20 @@ enum class BplusTreeOperationType
 class AttrComparator
 {
 public:
-  void init(AttrType type, int length)
-  {
-    attr_type_   = type;
-    attr_length_ = length;
-  }
+  void init(AttrType type, int length);
+
+  void init(const vector<AttrType> &types, const vector<int> &lengths);
 
   int attr_length() const { return attr_length_; }
 
-  int operator()(const char *v1, const char *v2) const
-  {
-    // TODO: optimized the comparison
-    Value left;
-    left.set_type(attr_type_);
-    left.set_data(v1, attr_length_);
-    Value right;
-    right.set_type(attr_type_);
-    right.set_data(v2, attr_length_);
-    return DataType::type_instance(attr_type_)->compare(left, right);
-  }
+  int operator()(const char *v1, const char *v2) const;
 
 private:
-  AttrType attr_type_;
-  int      attr_length_;
+  bool              composite_ = false;
+  AttrType          attr_type_ = AttrType::UNDEFINED;
+  int               attr_length_ = 0;
+  vector<AttrType>  attr_types_;
+  vector<int>       attr_lengths_;
 };
 
 /**
@@ -90,6 +81,8 @@ class KeyComparator
 {
 public:
   void init(AttrType type, int length) { attr_comparator_.init(type, length); }
+
+  void init(const vector<AttrType> &types, const vector<int> &lengths) { attr_comparator_.init(types, lengths); }
 
   const AttrComparator &attr_comparator() const { return attr_comparator_; }
 
@@ -166,6 +159,8 @@ private:
  * @details this is the first page of bplus tree.
  * only one field can be supported, can you extend it to multi-fields?
  */
+static const int MAX_INDEX_FIELD_NUM = 16;
+
 struct IndexFileHeader
 {
   IndexFileHeader()
@@ -178,7 +173,10 @@ struct IndexFileHeader
   int32_t  leaf_max_size;      ///< 叶子节点最大的键值对数
   int32_t  attr_length;        ///< 键值的长度
   int32_t  key_length;         ///< attr length + sizeof(RID)
-  AttrType attr_type;          ///< 键值的类型
+  AttrType attr_type;          ///< 键值的类型（单列索引时使用）
+  int32_t  field_num;          ///< 索引字段数，0/1 表示单列（兼容旧索引）
+  AttrType field_types[MAX_INDEX_FIELD_NUM];
+  int32_t  field_lengths[MAX_INDEX_FIELD_NUM];
 
   const string to_string() const
   {
@@ -461,8 +459,13 @@ public:
    */
   RC create(LogHandler &log_handler, BufferPoolManager &bpm, const char *file_name, AttrType attr_type, int attr_length,
       int internal_max_size = -1, int leaf_max_size = -1);
+  RC create(LogHandler &log_handler, BufferPoolManager &bpm, const char *file_name,
+      const vector<AttrType> &attr_types, const vector<int> &attr_lengths, int internal_max_size = -1,
+      int leaf_max_size = -1);
   RC create(LogHandler &log_handler, DiskBufferPool &buffer_pool, AttrType attr_type, int attr_length,
       int internal_max_size = -1, int leaf_max_size = -1);
+  RC create(LogHandler &log_handler, DiskBufferPool &buffer_pool, const vector<AttrType> &attr_types,
+      const vector<int> &attr_lengths, int internal_max_size = -1, int leaf_max_size = -1);
 
   /**
    * @brief 打开一个B+树

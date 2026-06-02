@@ -22,6 +22,73 @@ See the Mulan PSL v2 for more details. */
 
 using namespace common;
 
+void AttrComparator::init(AttrType type, int length)
+{
+  composite_   = false;
+  attr_type_   = type;
+  attr_length_ = length;
+  attr_types_.clear();
+  attr_lengths_.clear();
+}
+
+void AttrComparator::init(const vector<AttrType> &types, const vector<int> &lengths)
+{
+  if (types.size() == 1) {
+    init(types[0], lengths[0]);
+    return;
+  }
+  composite_    = true;
+  attr_types_     = types;
+  attr_lengths_   = lengths;
+  attr_length_    = 0;
+  for (int len : attr_lengths_) {
+    attr_length_ += len;
+  }
+}
+
+int AttrComparator::operator()(const char *v1, const char *v2) const
+{
+  if (!composite_) {
+    Value left;
+    left.set_type(attr_type_);
+    left.set_data(v1, attr_length_);
+    Value right;
+    right.set_type(attr_type_);
+    right.set_data(v2, attr_length_);
+    return DataType::type_instance(attr_type_)->compare(left, right);
+  }
+
+  int offset = 0;
+  for (size_t i = 0; i < attr_types_.size(); i++) {
+    Value left;
+    left.set_type(attr_types_[i]);
+    left.set_data(v1 + offset, attr_lengths_[i]);
+    Value right;
+    right.set_type(attr_types_[i]);
+    right.set_data(v2 + offset, attr_lengths_[i]);
+    int result = DataType::type_instance(attr_types_[i])->compare(left, right);
+    if (result != 0) {
+      return result;
+    }
+    offset += attr_lengths_[i];
+  }
+  return 0;
+}
+
+static void init_key_comparator_from_header(
+    const IndexFileHeader &header, KeyComparator &key_comparator, KeyPrinter &key_printer)
+{
+  if (header.field_num > 1) {
+    vector<AttrType> types(header.field_types, header.field_types + header.field_num);
+    vector<int>    lengths(header.field_lengths, header.field_lengths + header.field_num);
+    key_comparator.init(types, lengths);
+    key_printer.init(header.attr_type, header.attr_length);
+  } else {
+    key_comparator.init(header.attr_type, header.attr_length);
+    key_printer.init(header.attr_type, header.attr_length);
+  }
+}
+
 /**
  * @brief B+树的第一个页面存放的位置
  * @details B+树数据放到Buffer Pool中，Buffer Pool把文件按照固定大小的页面拆分。
@@ -801,6 +868,13 @@ RC BplusTreeHandler::create(LogHandler &log_handler,
                             int internal_max_size /* = -1*/,
                             int leaf_max_size /* = -1 */)
 {
+  return create(log_handler, bpm, file_name, vector<AttrType>{attr_type}, vector<int>{attr_length}, internal_max_size,
+      leaf_max_size);
+}
+
+RC BplusTreeHandler::create(LogHandler &log_handler, BufferPoolManager &bpm, const char *file_name,
+    const vector<AttrType> &attr_types, const vector<int> &attr_lengths, int internal_max_size, int leaf_max_size)
+{
   RC rc = bpm.create_file(file_name);
   if (OB_FAIL(rc)) {
     LOG_WARN("Failed to create file. file name=%s, rc=%d:%s", file_name, rc, strrc(rc));
@@ -817,7 +891,7 @@ RC BplusTreeHandler::create(LogHandler &log_handler,
   }
   LOG_INFO("Successfully open index file %s.", file_name);
 
-  rc = this->create(log_handler, *bp, attr_type, attr_length, internal_max_size, leaf_max_size);
+  rc = this->create(log_handler, *bp, attr_types, attr_lengths, internal_max_size, leaf_max_size);
   if (OB_FAIL(rc)) {
     bpm.close_file(file_name);
     return rc;
@@ -834,6 +908,25 @@ RC BplusTreeHandler::create(LogHandler &log_handler,
             int internal_max_size /* = -1 */,
             int leaf_max_size /* = -1 */)
 {
+  return create(
+      log_handler, buffer_pool, vector<AttrType>{attr_type}, vector<int>{attr_length}, internal_max_size, leaf_max_size);
+}
+
+RC BplusTreeHandler::create(LogHandler &log_handler, DiskBufferPool &buffer_pool, const vector<AttrType> &attr_types,
+    const vector<int> &attr_lengths, int internal_max_size, int leaf_max_size)
+{
+  if (attr_types.empty() || attr_types.size() != attr_lengths.size()) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (attr_types.size() > MAX_INDEX_FIELD_NUM) {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  int attr_length = 0;
+  for (int len : attr_lengths) {
+    attr_length += len;
+  }
+
   if (internal_max_size < 0) {
     internal_max_size = calc_internal_page_capacity(attr_length);
   }
@@ -866,7 +959,12 @@ RC BplusTreeHandler::create(LogHandler &log_handler,
   IndexFileHeader *file_header   = (IndexFileHeader *)pdata;
   file_header->attr_length       = attr_length;
   file_header->key_length        = attr_length + sizeof(RID);
-  file_header->attr_type         = attr_type;
+  file_header->attr_type         = attr_types[0];
+  file_header->field_num         = static_cast<int32_t>(attr_types.size());
+  for (size_t i = 0; i < attr_types.size(); i++) {
+    file_header->field_types[i]   = attr_types[i];
+    file_header->field_lengths[i] = attr_lengths[i];
+  }
   file_header->internal_max_size = internal_max_size;
   file_header->leaf_max_size     = leaf_max_size;
   file_header->root_page         = BP_INVALID_PAGE_NUM;
@@ -886,8 +984,7 @@ RC BplusTreeHandler::create(LogHandler &log_handler,
     return RC::NOMEM;
   }
 
-  key_comparator_.init(file_header->attr_type, file_header->attr_length);
-  key_printer_.init(file_header->attr_type, file_header->attr_length);
+  init_key_comparator_from_header(file_header_, key_comparator_, key_printer_);
 
   /*
   虽然我们针对B+树记录了WAL，但是我们记录的都是逻辑日志，并没有记录某个页面如何修改的物理日志。
@@ -958,8 +1055,7 @@ RC BplusTreeHandler::open(LogHandler &log_handler, DiskBufferPool &buffer_pool)
   // close old page_handle
   buffer_pool.unpin_page(frame);
 
-  key_comparator_.init(file_header_.attr_type, file_header_.attr_length);
-  key_printer_.init(file_header_.attr_type, file_header_.attr_length);
+  init_key_comparator_from_header(file_header_, key_comparator_, key_printer_);
   LOG_INFO("Successfully open index");
   return RC::SUCCESS;
 }

@@ -42,9 +42,19 @@ public:
 
   virtual RC create(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta)
   {
+    vector<FieldMeta> fields = {field_meta};
+    return create(table, file_name, index_meta, fields);
+  }
+  virtual RC create(Table *table, const char *file_name, const IndexMeta &index_meta, const vector<FieldMeta> &field_metas)
+  {
     return RC::UNSUPPORTED;
   }
   virtual RC open(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta)
+  {
+    vector<FieldMeta> fields = {field_meta};
+    return open(table, file_name, index_meta, fields);
+  }
+  virtual RC open(Table *table, const char *file_name, const IndexMeta &index_meta, const vector<FieldMeta> &field_metas)
   {
     return RC::UNSUPPORTED;
   }
@@ -52,6 +62,9 @@ public:
   virtual bool is_vector_index() { return false; }
 
   const IndexMeta &index_meta() const { return index_meta_; }
+  const FieldMeta &field_meta() const { return field_metas_.front(); }
+  const vector<FieldMeta> &field_metas() const { return field_metas_; }
+  int                      attr_length() const { return attr_length_; }
 
   /**
    * @brief 插入一条数据
@@ -89,11 +102,13 @@ public:
   virtual RC sync() = 0;
 
 protected:
-  RC init(const IndexMeta &index_meta, const FieldMeta &field_meta);
+  RC init(const IndexMeta &index_meta, const vector<FieldMeta> &field_metas);
+  void make_key(const char *record, char *key) const;
 
 protected:
-  IndexMeta index_meta_;  ///< 索引的元数据
-  FieldMeta field_meta_;  ///< 当前实现仅考虑一个字段的索引
+  IndexMeta           index_meta_;  ///< 索引的元数据
+  vector<FieldMeta>   field_metas_; ///< 索引字段（支持复合索引）
+  int                 attr_length_ = 0;
 };
 
 /**
