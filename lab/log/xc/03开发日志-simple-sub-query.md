@@ -172,21 +172,82 @@
    - 已加入 `where_condition` / `where_condition_list`
    - 目前支持：
      - `expression comp_op expression`
-     - `expression comp_op value`
      - `expression IS NULL`
      - `expression IS NOT NULL`
+7. 已开始接入 simple-sub-query 主线语法与表达式：
+   - `CompOp` 新增：
+     - `IN_OP`
+     - `NOT_IN_OP`
+   - `parse_defs.h` 新增：
+     - `SubQuerySqlNode`
+   - `ExprType` 新增：
+     - `SUB_QUERY`
+     - `IN_SUB_QUERY`
+   - `expression.h` 新增：
+     - `SubQueryExpr`
+     - `InSubQueryExpr`
+8. `lex_sql.l` 已新增 `IN` token
+9. `yacc_sql.y` 已新增：
+   - `sub_query`
+   - `expression -> sub_query`
+   - `where_condition -> expression IN sub_query`
+   - `where_condition -> expression NOT IN sub_query`
+10. `ExpressionBinder` 已新增子查询绑定入口：
+    - `bind_sub_query_expression`
+    - `bind_in_sub_query_expression`
+11. `SubQueryExpr` 绑定时已支持：
+    - 将子查询内部 `ParsedSqlNode` 转成独立 `Stmt`
+    - 校验子查询输出列数必须为 1
+    - 记录子查询输出类型与长度
+12. `expression.cpp` 已新增最小执行路径：
+    - 能把已绑定子查询 `Stmt` 转成逻辑计划与物理计划
+    - 能执行非关联子查询并收集结果
+    - 标量子查询：
+      - 空结果返回 `NULL`
+      - 多行结果返回错误
+    - `IN/NOT IN` 子查询：
+      - 遍历结果集做成员匹配
+13. `ExpressionIterator` 已补充对 `IN_SUB_QUERY` 的遍历支持
+14. 已补充子查询表达式的基础 `copy()` 占位实现，避免部分表达式重写路径直接返回空指针
+15. 已补齐标量子查询比较语法：
+    - `expression comp_op sub_query`
+    - `sub_query comp_op expression`
+16. 已在 binder 中补充子查询输出合法性限制：
+    - 子查询输出列数必须为 1
+    - `select *` 作为子查询输出直接视为非法
+17. 已在子查询表达式执行期补充 bound 状态保护，避免 copy 后或未绑定状态被误执行
+18. 已显式拦截关联子查询，当前统一返回 `UNSUPPORTED`
+19. 已补 `IN/NOT IN` 对子查询结果集内 `NULL` 元素的兜底语义，避免误判为真
+20. 已静态确认：
+    - `SELECT WHERE` 新表达式链与 `JOIN ON` 旧条件链仍然分离
+    - `SelectStmt -> LogicalPlanGenerator` 新谓词路径已贯通
+    - `DELETE/UPDATE` 仍沿用旧 `where -> condition_list`
+21. 已补 `ComparisonExpr` 对 `IN_OP/NOT_IN_OP` 的显式兜底拒绝，避免未来误走错误路径时静默产生错误结果
+22. 已继续收紧 `select *` 子查询非法场景，确保该类语句在子查询绑定阶段稳定落为错误，而不是依赖后续路径偶然失败
+23. 已继续收口子查询表达式复制链：
+   - `SubQueryExpr` 不再只做空壳 `copy()`
+   - 已绑定子查询会连同内部 `Stmt` 共享到复制后的表达式节点
+   - 避免谓词从逻辑计划复制到物理计划后，子查询节点丢失执行载体
+24. 已修正一处过度保守的“伪相关子查询”拦截：
+   - 不再因为子查询与外层查询使用同一张表对象，就直接判成相关子查询
+   - 保留当前范围为“只做非关联子查询”，但不误杀官方 simple-sub-query 这类合法非关联场景
+25. 已把 `select *` 子查询非法判定前移到原始子查询 SQL AST 检查阶段：
+   - `col1 = (select * from ssq_2)`
+   - `col1 in (select * from ssq_2)`
+   - `col1 not in (select * from ssq_2)`
+   以上场景不再依赖后续绑定展开后的偶然失败，而是在子查询绑定入口稳定报错
 
 ### 当前尚未完成
 
-1. 还没有正式接入子查询表达式节点
-2. 还没有把 `(select ...)` 作为 `expression` 的一种语法形式接入 parser
-3. 还没有在 binder 中绑定子查询内部 `SelectStmt`
-4. 还没有实现非关联子查询的一次性求值与缓存
-5. 还没有补上官方用例中的：
-   - `IN / NOT IN (sub query)`
-   - 标量子查询比较
-   - 多行标量子查询报错
-   - `select *` 子查询报错
+1. 当前 `copy()` 已能安全带上已绑定子查询执行载体，但还没有实现“完整深拷贝 parsed sql / stmt 树”的独立语义
+2. 还没有补子查询结果缓存，当前是每次表达式求值都重新执行
+3. 关联子查询仍未正式支持；当前实现是不主动扩展到该范围，后续若要支持需单独补作用域绑定
+4. 还没有做完整编译与联调确认
+5. 还需要继续检查以下边界是否和官方表现完全一致：
+   - 空子查询参与 `< <= > >= = <>`
+   - `IN/NOT IN` 与 `NULL` 结果集元素的交互是否与官方完全一致
+   - `select *` 参与 `IN/NOT IN`
+6. 当前剩余工作更偏向“同伴编译收口 + 边界对齐”，而不再是主链缺失
 
 ## 本轮编译情况
 
@@ -204,6 +265,12 @@
   - “代码已推进到 `SELECT WHERE` 表达式化阶段”
   - “parser 第一处类型串扰已修复”
   - “尚未完成最终编译闭环确认”
+
+## 当前总体判断
+
+- `simple-sub-query` 已不再停留在“方案与骨架”阶段，已经进入“真实子查询表达式 + 非关联执行路径”的主线实现
+- 当前代码更接近“功能主链已写入，但还需要继续补边界和编译收口”
+- 下一步应继续完善 parser / expr / binder 的剩余闭环，而不是回退到旧条件链
 
 ## 下一步建议
 

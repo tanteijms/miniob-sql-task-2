@@ -24,6 +24,7 @@ See the Mulan PSL v2 for more details. */
 
 class Tuple;
 class Stmt;
+class ParsedSqlNode;
 
 /**
  * @defgroup Expression
@@ -603,11 +604,21 @@ public:
   AttrType value_type() const override { return value_type_; }
   int      value_length() const override { return value_length_; }
   RC       get_value(const Tuple &tuple, Value &value) const override;
-  unique_ptr<Expression> copy() const override { return nullptr; }
+  unique_ptr<Expression> copy() const override
+  {
+    auto copied = make_unique<SubQueryExpr>(nullptr);
+    copied->value_type_   = value_type_;
+    copied->value_length_ = value_length_;
+    copied->bound_        = bound_;
+    copied->stmt_         = stmt_;
+    return copied;
+  }
 
   unique_ptr<ParsedSqlNode> &sql_node() { return sql_node_; }
-  const unique_ptr<Stmt>    &stmt() const { return stmt_; }
-  void set_stmt(unique_ptr<Stmt> stmt) { stmt_ = std::move(stmt); }
+  const std::shared_ptr<Stmt> &stmt() const { return stmt_; }
+  void set_stmt(std::shared_ptr<Stmt> stmt) { stmt_ = std::move(stmt); }
+  bool is_bound() const { return bound_; }
+  void set_bound(bool bound) { bound_ = bound; }
   void set_value_meta(AttrType value_type, int value_length)
   {
     value_type_   = value_type;
@@ -616,9 +627,10 @@ public:
 
 private:
   unique_ptr<ParsedSqlNode> sql_node_;
-  unique_ptr<Stmt>          stmt_;
+  std::shared_ptr<Stmt>     stmt_;
   AttrType                  value_type_   = AttrType::UNDEFINED;
   int                       value_length_ = -1;
+  bool                      bound_        = false;
 };
 
 class InSubQueryExpr : public Expression
@@ -630,7 +642,14 @@ public:
   ExprType type() const override { return ExprType::IN_SUB_QUERY; }
   AttrType value_type() const override { return AttrType::BOOLEANS; }
   RC       get_value(const Tuple &tuple, Value &value) const override;
-  unique_ptr<Expression> copy() const override { return nullptr; }
+  unique_ptr<Expression> copy() const override
+  {
+    auto copied_sub_query = make_unique<SubQueryExpr>(nullptr);
+    copied_sub_query->set_value_meta(sub_query_expr_->value_type(), sub_query_expr_->value_length());
+    copied_sub_query->set_bound(sub_query_expr_->is_bound());
+    copied_sub_query->set_stmt(sub_query_expr_->stmt());
+    return make_unique<InSubQueryExpr>(left_->copy(), std::move(copied_sub_query), not_in_);
+  }
 
   unique_ptr<Expression>  &left() { return left_; }
   unique_ptr<SubQueryExpr> &sub_query_expr() { return sub_query_expr_; }

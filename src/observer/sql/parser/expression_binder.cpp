@@ -549,6 +549,25 @@ RC ExpressionBinder::bind_sub_query_expression(
     return RC::UNSUPPORTED;
   }
 
+  SelectSqlNode &sub_query_sql = sub_query_expr->sql_node()->selection;
+  if (sub_query_sql.expressions.size() != 1) {
+    LOG_WARN("sub query must output exactly one column");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  Expression *raw_output_expr = sub_query_sql.expressions[0].get();
+  if (raw_output_expr->type() == ExprType::STAR) {
+    LOG_WARN("select * is not allowed in sub query");
+    return RC::INVALID_ARGUMENT;
+  }
+  if (raw_output_expr->type() == ExprType::UNBOUND_FIELD) {
+    auto unbound_field_expr = static_cast<UnboundFieldExpr *>(raw_output_expr);
+    if (0 == strcmp(unbound_field_expr->field_name(), "*")) {
+      LOG_WARN("select * is not allowed in sub query");
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
   Stmt *stmt = nullptr;
   RC    rc   = Stmt::create_stmt(context_.db(), *sub_query_expr->sql_node(), stmt);
   if (OB_FAIL(rc)) {
@@ -569,8 +588,9 @@ RC ExpressionBinder::bind_sub_query_expression(
   }
 
   Expression *output_expr = select_stmt->query_expressions()[0].get();
-  sub_query_expr->set_stmt(std::move(stmt_holder));
+  sub_query_expr->set_stmt(std::shared_ptr<Stmt>(stmt_holder.release()));
   sub_query_expr->set_value_meta(output_expr->value_type(), output_expr->value_length());
+  sub_query_expr->set_bound(true);
   bound_expressions.emplace_back(std::move(expr));
   return RC::SUCCESS;
 }

@@ -1,0 +1,68 @@
+### 2026-06-03 03:22:52.809
+create table null_table(id int not null, num int null, price float not null, birthday date null);
+### 2026-06-03 03:22:52.831
+create table null_table2(id int not null, num int null, price float not null, birthday date null);
+### 2026-06-03 03:22:52.836
+create index index_num on null_table(num);
+### 2026-06-03 03:22:52.845
+insert into null_table values (1, 18, 10.0, '2020-01-01');
+### 2026-06-03 03:22:52.853
+insert into null_table values (2, null, 20.0, '2010-01-11');
+### 2026-06-03 03:22:52.859
+insert into null_table values (3, 12, 30.0, null);
+### 2026-06-03 03:22:52.870
+insert into null_table values (4, 15, 30.0, '2021-01-31');
+### 2026-06-03 03:22:52.882
+insert into null_table2 values (1, 18, 30.0, '2021-01-31');
+### 2026-06-03 03:22:52.891
+insert into null_table2 values (2, null, 40.0, null);
+### 2026-06-03 03:22:52.898
+insert into null_table values (5, 15, null, '2021-01-31');
+### 2026-06-03 03:22:52.905
+insert into null_table values (null, 15, 30.0, '2021-01-31');
+### 2026-06-03 03:22:52.910
+select * from null_table;
+### 2026-06-03 03:22:52.916
+select * from null_table where 1 is null;
+### 2026-06-03 03:22:52.924
+select * from null_table where 1 is not null;
+### 2026-06-03 03:22:52.932
+select * from null_table where null is null;
+### 2026-06-03 03:22:52.937
+select * from null_table where null is not null;
+### 2026-06-03 03:22:52.942
+select * from null_table where num is null;
+### 2026-06-03 03:22:52.949
+select * from null_table where num is not null;
+### 2026-06-03 03:22:52.955
+select * from null_table where num = null;
+### 2026-06-03 03:22:52.963
+select * from null_table where null = num;
+### 2026-06-03 03:22:52.969
+select * from null_table where num <> null;
+### 2026-06-03 03:22:52.977
+select null_table.num,null_table2.num,null_table.birthday from null_table,null_table2 where null_table.num=null_table2.num;
+### 2026-06-03 03:22:52.993
+select count(*) from null_table;
+### 2026-06-03 03:22:52.999
+select count(price) from null_table;
+### 2026-06-03 03:22:53.006
+select count(birthday) from null_table;
+### 2026-06-03 03:22:53.014
+select avg(num) from null_table;
+### 2026-06-03 03:22:53.020
+create table null_table3(id int not null, num int null);
+### 2026-06-03 03:22:53.027
+insert into null_table3 values (1, null);
+### 2026-06-03 03:22:53.034
+insert into null_table3 values (2, null);
+### 2026-06-03 03:22:53.040
+select count(num) from null_table3;
+### 2026-06-03 03:22:53.047
+select min(num) from null_table3;
+### 2026-06-03 03:22:53.055
+select max(num) from null_table3;
+### 2026-06-03 03:22:53.061
+select avg(num) from null_table3;
+### 2026-06-03 03:22:53.069
+exit;

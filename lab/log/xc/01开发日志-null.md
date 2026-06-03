@@ -64,3 +64,11 @@
 ## 6. 修订记录
 
 - 2026-06-03：完成正式开工前分析并进入实现
+- 2026-06-03：已补充手工验证脚本 `lab/test/cases/sql/null.sql`，供同伴按 `primary-null.test` 主线做 SQL 冒烟与回归对照。
+- 2026-06-03：测试前需先清空旧数据库目录；由于 row record 布局已改为带 null bitmap，旧表文件不兼容。
+- 2026-06-03：已在 `miniob-dev` 容器内通过自写 Python harness 直连 `observer` 做主线 SQL 验证，发现当前运行二进制对 `NULL` 主线仍未达可测状态：
+  - `create table ... int null/not null` 返回 `SQL_SYNTAX > Failed to parse sql`
+  - `insert/update ... null`、`expr is null`、`expr is not null` 返回同类语法错误
+  - 依赖建表成功的后续 `select/aggregate/join` 多数返回 `FAILURE`
+  - 说明至少存在“parser 改动未真正进入当前运行二进制”或“相关语法/语义实现仍不完整”之一
+- 2026-06-03：根据单日志锁原则，当前先停止继续宣称可测，需先修复上述解析/运行问题后再进入下一轮验证。

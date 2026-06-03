@@ -831,6 +831,16 @@ where_condition:
     {
       $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
     }
+    | expression comp_op sub_query
+    {
+      $$ = create_comparison_expression($2, $1, new SubQueryExpr(std::move($3->sql_node)), sql_string, &@$);
+      delete $3;
+    }
+    | sub_query comp_op expression
+    {
+      $$ = create_comparison_expression($2, new SubQueryExpr(std::move($1->sql_node)), $3, sql_string, &@$);
+      delete $1;
+    }
     | expression IN sub_query
     {
       $$ = new InSubQueryExpr(unique_ptr<Expression>($1), make_unique<SubQueryExpr>(std::move($3->sql_node)), false);

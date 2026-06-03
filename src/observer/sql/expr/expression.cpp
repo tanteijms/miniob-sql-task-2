@@ -255,6 +255,11 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
       }
       result = like_match(left.get_string(), right.get_string());
     } break;
+    case IN_OP:
+    case NOT_IN_OP: {
+      result = false;
+      rc     = RC::UNSUPPORTED;
+    } break;
     default: {
       LOG_WARN("unsupported comparison. %d", comp_);
       rc = RC::INTERNAL;
@@ -825,7 +830,7 @@ SubQueryExpr::SubQueryExpr(unique_ptr<ParsedSqlNode> sql_node) : sql_node_(std::
 
 RC SubQueryExpr::get_value(const Tuple &tuple, Value &value) const
 {
-  if (stmt_ == nullptr) {
+  if (!bound_ || stmt_ == nullptr) {
     return RC::INTERNAL;
   }
 
@@ -857,7 +862,7 @@ InSubQueryExpr::InSubQueryExpr(unique_ptr<Expression> left, unique_ptr<SubQueryE
 
 RC InSubQueryExpr::get_value(const Tuple &tuple, Value &value) const
 {
-  if (sub_query_expr_ == nullptr || sub_query_expr_->stmt() == nullptr) {
+  if (sub_query_expr_ == nullptr || !sub_query_expr_->is_bound() || sub_query_expr_->stmt() == nullptr) {
     return RC::INTERNAL;
   }
 
@@ -874,11 +879,29 @@ RC InSubQueryExpr::get_value(const Tuple &tuple, Value &value) const
   }
 
   bool matched = false;
+  bool has_null = false;
   for (const Value &item : values) {
+    if (item.is_null()) {
+      has_null = true;
+      continue;
+    }
+    if (left_value.is_null()) {
+      continue;
+    }
     if (left_value.compare(item) == 0) {
       matched = true;
       break;
     }
+  }
+
+  if (left_value.is_null()) {
+    value.set_boolean(false);
+    return RC::SUCCESS;
+  }
+
+  if (!matched && has_null) {
+    value.set_boolean(false);
+    return RC::SUCCESS;
   }
 
   value.set_boolean(not_in_ ? !matched : matched);
