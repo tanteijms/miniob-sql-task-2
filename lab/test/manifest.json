@@ -354,6 +354,17 @@
       "timeout_sec": 60
     },
     {
+      "id": "comprehensive-100",
+      "name": "comprehensive 100 assertion cases",
+      "category": "comprehensive",
+      "feature": "integration",
+      "points": 0,
+      "file": "lab/test/comprehensive/cases.json",
+      "case_timeout_sec": 15,
+      "timeout_sec": 1800,
+      "tags": ["slow"]
+    },
+    {
       "id": "stress-big-write",
       "name": "big-write (500 ops)",
       "category": "stress",
