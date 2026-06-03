@@ -103,7 +103,8 @@ public:
 
   int      length() const { return length_; }
   AttrType attr_type() const { return attr_type_; }
-  bool     is_null() const { return is_null_; }
+  bool is_null() const { return is_null_; }
+  void set_null(AttrType type);
 
 public:
   /**

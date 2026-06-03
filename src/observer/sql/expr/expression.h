@@ -23,8 +23,6 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/chunk.h"
 
 class Tuple;
-class Stmt;
-class ParsedSqlNode;
 
 /**
  * @defgroup Expression
@@ -51,8 +49,9 @@ enum class ExprType
   ARITHMETIC,   ///< 算术运算
   AGGREGATION,  ///< 聚合运算
   FUNCTION,     ///< 标量函数 length/round/date_format
-  SUB_QUERY,    ///< 标量子查询
-  IN_SUB_QUERY, ///< IN/NOT IN 子查询
+  UNBOUND_SUBQUERY,  ///< 未绑定子查询
+  SUBQUERY,          ///< 已绑定子查询
+  IN_SUBQUERY,       ///< IN / NOT IN 子查询
 };
 
 /**
@@ -206,7 +205,12 @@ public:
 
   bool equal(const Expression &other) const override;
 
-  unique_ptr<Expression> copy() const override { return make_unique<FieldExpr>(field_); }
+  unique_ptr<Expression> copy() const override
+  {
+    auto copied = make_unique<FieldExpr>(field_);
+    copied->set_outer_ref(outer_ref_);
+    return copied;
+  }
 
   ExprType type() const override { return ExprType::FIELD; }
   AttrType value_type() const override { return field_.attr_type(); }
@@ -223,8 +227,12 @@ public:
 
   RC get_value(const Tuple &tuple, Value &value) const override;
 
+  void set_outer_ref(bool outer_ref) { outer_ref_ = outer_ref; }
+  bool outer_ref() const { return outer_ref_; }
+
 private:
   Field field_;
+  bool  outer_ref_ = false;
 };
 
 /**
@@ -592,71 +600,4 @@ public:
 private:
   FuncType                       func_type_;
   vector<unique_ptr<Expression>> params_;
-};
-
-class SubQueryExpr : public Expression
-{
-public:
-  explicit SubQueryExpr(unique_ptr<ParsedSqlNode> sql_node);
-  virtual ~SubQueryExpr() = default;
-
-  ExprType type() const override { return ExprType::SUB_QUERY; }
-  AttrType value_type() const override { return value_type_; }
-  int      value_length() const override { return value_length_; }
-  RC       get_value(const Tuple &tuple, Value &value) const override;
-  unique_ptr<Expression> copy() const override
-  {
-    auto copied = make_unique<SubQueryExpr>(nullptr);
-    copied->value_type_   = value_type_;
-    copied->value_length_ = value_length_;
-    copied->bound_        = bound_;
-    copied->stmt_         = stmt_;
-    return copied;
-  }
-
-  unique_ptr<ParsedSqlNode> &sql_node() { return sql_node_; }
-  const std::shared_ptr<Stmt> &stmt() const { return stmt_; }
-  void set_stmt(std::shared_ptr<Stmt> stmt) { stmt_ = std::move(stmt); }
-  bool is_bound() const { return bound_; }
-  void set_bound(bool bound) { bound_ = bound; }
-  void set_value_meta(AttrType value_type, int value_length)
-  {
-    value_type_   = value_type;
-    value_length_ = value_length;
-  }
-
-private:
-  unique_ptr<ParsedSqlNode> sql_node_;
-  std::shared_ptr<Stmt>     stmt_;
-  AttrType                  value_type_   = AttrType::UNDEFINED;
-  int                       value_length_ = -1;
-  bool                      bound_        = false;
-};
-
-class InSubQueryExpr : public Expression
-{
-public:
-  InSubQueryExpr(unique_ptr<Expression> left, unique_ptr<SubQueryExpr> sub_query_expr, bool not_in);
-  virtual ~InSubQueryExpr() = default;
-
-  ExprType type() const override { return ExprType::IN_SUB_QUERY; }
-  AttrType value_type() const override { return AttrType::BOOLEANS; }
-  RC       get_value(const Tuple &tuple, Value &value) const override;
-  unique_ptr<Expression> copy() const override
-  {
-    auto copied_sub_query = make_unique<SubQueryExpr>(nullptr);
-    copied_sub_query->set_value_meta(sub_query_expr_->value_type(), sub_query_expr_->value_length());
-    copied_sub_query->set_bound(sub_query_expr_->is_bound());
-    copied_sub_query->set_stmt(sub_query_expr_->stmt());
-    return make_unique<InSubQueryExpr>(left_->copy(), std::move(copied_sub_query), not_in_);
-  }
-
-  unique_ptr<Expression>  &left() { return left_; }
-  unique_ptr<SubQueryExpr> &sub_query_expr() { return sub_query_expr_; }
-  bool                     not_in() const { return not_in_; }
-
-private:
-  unique_ptr<Expression>   left_;
-  unique_ptr<SubQueryExpr> sub_query_expr_;
-  bool                     not_in_ = false;
 };

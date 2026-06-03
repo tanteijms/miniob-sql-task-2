@@ -15,8 +15,26 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/predicate_pushdown_rewriter.h"
 #include "common/log/log.h"
 #include "sql/expr/expression.h"
+#include "sql/expr/expression_iterator.h"
 #include "sql/operator/logical_operator.h"
 #include "sql/operator/table_get_logical_operator.h"
+
+static bool expression_contains_subquery(Expression &expr)
+{
+  if (expr.type() == ExprType::SUBQUERY || expr.type() == ExprType::IN_SUBQUERY ||
+      expr.type() == ExprType::UNBOUND_SUBQUERY) {
+    return true;
+  }
+
+  bool found = false;
+  ExpressionIterator::iterate_child_expr(expr, [&](unique_ptr<Expression> &child) -> RC {
+    if (child != nullptr && expression_contains_subquery(*child)) {
+      found = true;
+    }
+    return RC::SUCCESS;
+  });
+  return found;
+}
 
 RC PredicatePushdownRewriter::rewrite(unique_ptr<LogicalOperator> &oper, bool &change_made)
 {
@@ -118,9 +136,12 @@ RC PredicatePushdownRewriter::get_exprs_can_pushdown(
       }
     }
   } else if (expr->type() == ExprType::COMPARISON) {
-    // 如果是比较操作，并且比较的左边或右边是表某个列值，那么就下推下去
-
+    if (expression_contains_subquery(*expr)) {
+      return rc;
+    }
     pushdown_exprs.emplace_back(std::move(expr));
+  } else if (expr->type() == ExprType::IN_SUBQUERY) {
+    return rc;
   }
   return rc;
 }

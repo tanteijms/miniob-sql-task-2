@@ -15,10 +15,11 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "common/lang/ranges.h"
-#include "sql/stmt/select_stmt.h"
-#include "sql/stmt/stmt.h"
 #include "sql/parser/expression_binder.h"
 #include "sql/expr/expression_iterator.h"
+#include "sql/expr/subquery_expr.h"
+#include "sql/stmt/select_stmt.h"
+#include "storage/db/db.h"
 
 using namespace common;
 
@@ -26,10 +27,19 @@ Table *BinderContext::find_table(const char *table_name) const
 {
   auto pred = [table_name](Table *table) { return 0 == strcasecmp(table_name, table->name()); };
   auto iter = ranges::find_if(query_tables_, pred);
-  if (iter == query_tables_.end()) {
-    return nullptr;
+  if (iter != query_tables_.end()) {
+    return *iter;
   }
-  return *iter;
+  if (parent_ != nullptr) {
+    return parent_->find_table(table_name);
+  }
+  return nullptr;
+}
+
+bool BinderContext::is_local_table(Table *table) const
+{
+  auto iter = ranges::find(query_tables_, table);
+  return iter != query_tables_.end();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,17 +78,22 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
       return bind_function_expression(expr, bound_expressions);
     } break;
 
-    case ExprType::FUNCTION: {
+    case ExprType::UNBOUND_SUBQUERY: {
+      return bind_subquery_expression(expr, bound_expressions);
+    } break;
+
+    case ExprType::IN_SUBQUERY: {
+      return bind_in_subquery_expression(expr, bound_expressions);
+    } break;
+
+    case ExprType::SUBQUERY: {
       bound_expressions.emplace_back(std::move(expr));
       return RC::SUCCESS;
     } break;
 
-    case ExprType::SUB_QUERY: {
-      return bind_sub_query_expression(expr, bound_expressions);
-    } break;
-
-    case ExprType::IN_SUB_QUERY: {
-      return bind_in_sub_query_expression(expr, bound_expressions);
+    case ExprType::FUNCTION: {
+      bound_expressions.emplace_back(std::move(expr));
+      return RC::SUCCESS;
     } break;
 
     case ExprType::FIELD: {
@@ -189,6 +204,9 @@ RC ExpressionBinder::bind_unbound_field_expression(
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
     field_expr->set_name(field_name);
+    if (!context_.is_local_table(table)) {
+      field_expr->set_outer_ref(true);
+    }
     bound_expressions.emplace_back(field_expr);
   }
 
@@ -526,110 +544,74 @@ RC ExpressionBinder::bind_function_expression(
   return RC::SUCCESS;
 }
 
-RC ExpressionBinder::bind_sub_query_expression(
+RC ExpressionBinder::bind_subquery_expression(
     unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
 {
-  if (nullptr == expr) {
-    return RC::SUCCESS;
+  if (db_ == nullptr) {
+    LOG_WARN("db is null when binding subquery");
+    return RC::INVALID_ARGUMENT;
   }
 
-  auto sub_query_expr = static_cast<SubQueryExpr *>(expr.get());
-  if (sub_query_expr->stmt()) {
-    bound_expressions.emplace_back(std::move(expr));
-    return RC::SUCCESS;
+  auto unbound_expr = static_cast<UnboundSubQueryExpr *>(expr.get());
+  Stmt *stmt        = nullptr;
+  RC    rc          = SelectStmt::create(db_, unbound_expr->select_sql(), stmt, &context_);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to create subquery select stmt. rc=%s", strrc(rc));
+    return rc;
   }
 
-  if (context_.db() == nullptr) {
-    LOG_WARN("db is null while binding sub query");
+  unique_ptr<SelectStmt> select_stmt(static_cast<SelectStmt *>(stmt));
+  if (select_stmt->query_expressions().size() != 1) {
+    LOG_WARN("subquery must return exactly one column");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  unique_ptr<Expression> &value_expr = select_stmt->query_expressions().front();
+  if (value_expr->type() == ExprType::STAR) {
+    LOG_WARN("subquery does not support select *");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  unique_ptr<Expression> value_expr_copy = value_expr->copy();
+  if (value_expr_copy == nullptr) {
+    LOG_WARN("failed to copy subquery value expression");
     return RC::INTERNAL;
   }
 
-  if (sub_query_expr->sql_node() == nullptr || sub_query_expr->sql_node()->flag != SCF_SELECT) {
-    LOG_WARN("only select sub query is supported");
-    return RC::UNSUPPORTED;
-  }
-
-  SelectSqlNode &sub_query_sql = sub_query_expr->sql_node()->selection;
-  if (sub_query_sql.expressions.size() != 1) {
-    LOG_WARN("sub query must output exactly one column");
-    return RC::INVALID_ARGUMENT;
-  }
-
-  Expression *raw_output_expr = sub_query_sql.expressions[0].get();
-  if (raw_output_expr->type() == ExprType::STAR) {
-    LOG_WARN("select * is not allowed in sub query");
-    return RC::INVALID_ARGUMENT;
-  }
-  if (raw_output_expr->type() == ExprType::UNBOUND_FIELD) {
-    auto unbound_field_expr = static_cast<UnboundFieldExpr *>(raw_output_expr);
-    if (0 == strcmp(unbound_field_expr->field_name(), "*")) {
-      LOG_WARN("select * is not allowed in sub query");
-      return RC::INVALID_ARGUMENT;
-    }
-  }
-
-  Stmt *stmt = nullptr;
-  RC    rc   = Stmt::create_stmt(context_.db(), *sub_query_expr->sql_node(), stmt);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("failed to create stmt for sub query. rc=%s", strrc(rc));
-    return rc;
-  }
-
-  unique_ptr<Stmt> stmt_holder(stmt);
-  if (stmt_holder->type() != StmtType::SELECT) {
-    LOG_WARN("only select stmt is supported in sub query");
-    return RC::UNSUPPORTED;
-  }
-
-  auto select_stmt = static_cast<SelectStmt *>(stmt_holder.get());
-  if (select_stmt->query_expressions().size() != 1) {
-    LOG_WARN("sub query must output exactly one column");
-    return RC::INVALID_ARGUMENT;
-  }
-
-  Expression *output_expr = select_stmt->query_expressions()[0].get();
-  sub_query_expr->set_stmt(std::shared_ptr<Stmt>(stmt_holder.release()));
-  sub_query_expr->set_value_meta(output_expr->value_type(), output_expr->value_length());
-  sub_query_expr->set_bound(true);
-  bound_expressions.emplace_back(std::move(expr));
+  bound_expressions.emplace_back(
+      make_unique<SubQueryExpr>(std::move(select_stmt), std::move(value_expr_copy)));
+  auto &subquery_expr = static_cast<SubQueryExpr &>(*bound_expressions.back());
+  subquery_expr.set_correlated(select_stmt_has_correlation(subquery_expr.select_stmt()));
   return RC::SUCCESS;
 }
 
-RC ExpressionBinder::bind_in_sub_query_expression(
+RC ExpressionBinder::bind_in_subquery_expression(
     unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
 {
-  if (nullptr == expr) {
-    return RC::SUCCESS;
-  }
+  auto in_expr = static_cast<InSubQueryExpr *>(expr.get());
 
-  auto in_sub_query_expr = static_cast<InSubQueryExpr *>(expr.get());
-  vector<unique_ptr<Expression>> child_bound_expressions;
-
-  RC rc = bind_expression(in_sub_query_expr->left(), child_bound_expressions);
+  vector<unique_ptr<Expression>> left_bound;
+  RC                             rc = bind_expression(in_expr->left(), left_bound);
   if (OB_FAIL(rc)) {
     return rc;
   }
-  if (child_bound_expressions.size() != 1) {
-    LOG_WARN("invalid left children number of in sub query expression: %d", child_bound_expressions.size());
+  if (left_bound.size() != 1) {
+    LOG_WARN("invalid left expression for IN subquery");
     return RC::INVALID_ARGUMENT;
   }
-  if (child_bound_expressions[0].get() != in_sub_query_expr->left().get()) {
-    in_sub_query_expr->left().reset(child_bound_expressions[0].release());
-  }
 
-  child_bound_expressions.clear();
-  unique_ptr<Expression> sub_query_holder(in_sub_query_expr->sub_query_expr().release());
-  rc = bind_sub_query_expression(sub_query_holder, child_bound_expressions);
+  vector<unique_ptr<Expression>> sub_bound;
+  rc = bind_expression(in_expr->subquery(), sub_bound);
   if (OB_FAIL(rc)) {
-    in_sub_query_expr->sub_query_expr().reset(static_cast<SubQueryExpr *>(sub_query_holder.release()));
     return rc;
   }
-  if (child_bound_expressions.size() != 1 || child_bound_expressions[0]->type() != ExprType::SUB_QUERY) {
-    LOG_WARN("invalid sub query children number of in sub query expression: %d", child_bound_expressions.size());
+  if (sub_bound.size() != 1 || sub_bound[0]->type() != ExprType::SUBQUERY) {
+    LOG_WARN("invalid subquery for IN expression");
     return RC::INVALID_ARGUMENT;
   }
-  in_sub_query_expr->sub_query_expr().reset(static_cast<SubQueryExpr *>(child_bound_expressions[0].release()));
 
+  in_expr->left()    = std::move(left_bound[0]);
+  in_expr->subquery() = std::move(sub_bound[0]);
   bound_expressions.emplace_back(std::move(expr));
   return RC::SUCCESS;
 }

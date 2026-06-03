@@ -14,82 +14,44 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 
+#include "sql/expr/subquery_expr.h"
 #include "sql/expr/sql_function.h"
 
 #include "sql/expr/like_match.h"
 #include "sql/expr/tuple.h"
 #include "sql/expr/arithmetic_operator.hpp"
-#include "common/log/log.h"
-#include "session/session.h"
-#include "sql/operator/logical_operator.h"
-#include "sql/operator/physical_operator.h"
-#include "sql/optimizer/logical_plan_generator.h"
-#include "sql/optimizer/physical_plan_generator.h"
 
 using namespace std;
 
-namespace {
-RC execute_sub_query_stmt(const Stmt &stmt, vector<Value> &values)
+static RC get_comparison_operand_value(const Tuple &tuple, Expression &expr, Value &value)
 {
-  Session *session = Session::current_session();
-  if (session == nullptr) {
-    LOG_WARN("no current session for sub query execution");
-    return RC::INTERNAL;
-  }
-
-  LogicalPlanGenerator              logical_plan_generator;
-  unique_ptr<LogicalOperator>       logical_operator;
-  RC rc = logical_plan_generator.create(const_cast<Stmt *>(&stmt), logical_operator);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("failed to create logical plan for sub query. rc=%s", strrc(rc));
-    return rc;
-  }
-
-  PhysicalPlanGenerator             physical_plan_generator;
-  unique_ptr<PhysicalOperator>      physical_operator;
-  rc = physical_plan_generator.create(*logical_operator, physical_operator, session);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("failed to create physical plan for sub query. rc=%s", strrc(rc));
-    return rc;
-  }
-
-  rc = physical_operator->open(session->current_trx());
-  if (OB_FAIL(rc)) {
-    LOG_WARN("failed to open physical operator for sub query. rc=%s", strrc(rc));
-    return rc;
-  }
-
-  while (RC::SUCCESS == (rc = physical_operator->next())) {
-    Tuple *tuple = physical_operator->current_tuple();
-    if (tuple == nullptr) {
-      physical_operator->close();
-      return RC::INTERNAL;
+  if (expr.type() == ExprType::SUBQUERY) {
+    vector<Value> values;
+    RC            rc = static_cast<SubQueryExpr &>(expr).materialize_all_values(values, &tuple);
+    if (OB_FAIL(rc)) {
+      return rc;
     }
-
-    if (tuple->cell_num() != 1) {
-      physical_operator->close();
+    if (values.size() != 1) {
       return RC::INVALID_ARGUMENT;
     }
-
-    Value value;
-    RC value_rc = tuple->cell_at(0, value);
-    if (OB_FAIL(value_rc)) {
-      physical_operator->close();
-      return value_rc;
-    }
-    values.emplace_back(std::move(value));
+    value = values[0];
+    return RC::SUCCESS;
   }
-
-  RC close_rc = physical_operator->close();
-  if (rc == RC::RECORD_EOF) {
-    rc = RC::SUCCESS;
+  if (expr.type() == ExprType::UNBOUND_SUBQUERY) {
+    return RC::INTERNAL;
   }
-  return OB_FAIL(rc) ? rc : close_rc;
+  return expr.get_value(tuple, value);
 }
-}  // namespace
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
 {
+  if (outer_ref_) {
+    const Tuple *outer = subquery_outer_tuple();
+    if (outer == nullptr) {
+      return RC::INVALID_ARGUMENT;
+    }
+    return outer->find_cell(TupleCellSpec(table_name(), field_name()), value);
+  }
   return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
 }
 
@@ -211,58 +173,53 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
-  RC  rc         = RC::SUCCESS;
-  if (comp_ == IS_NULL) {
-    result = left.is_null();
-    return RC::SUCCESS;
-  }
-  if (comp_ == IS_NOT_NULL) {
-    result = !left.is_null();
-    return RC::SUCCESS;
-  }
-
-  if (left.is_null() || right.is_null()) {
-    result = false;
-    return RC::SUCCESS;
-  }
-
-  int cmp_result = left.compare(right);
-  result         = false;
+  RC rc = RC::SUCCESS;
+  result = false;
   switch (comp_) {
-    case EQUAL_TO: {
-      result = (0 == cmp_result);
+    case IS_NULL: {
+      result = left.is_null();
     } break;
-    case LESS_EQUAL: {
-      result = (cmp_result <= 0);
-    } break;
-    case NOT_EQUAL: {
-      result = (cmp_result != 0);
-    } break;
-    case LESS_THAN: {
-      result = (cmp_result < 0);
-    } break;
-    case GREAT_EQUAL: {
-      result = (cmp_result >= 0);
-    } break;
-    case GREAT_THAN: {
-      result = (cmp_result > 0);
-    } break;
-    case LIKE_OP: {
-      if (left.attr_type() != AttrType::CHARS || right.attr_type() != AttrType::CHARS) {
-        LOG_WARN("LIKE only supports CHAR type. left=%s, right=%s",
-            attr_type_to_string(left.attr_type()), attr_type_to_string(right.attr_type()));
-        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-      }
-      result = like_match(left.get_string(), right.get_string());
-    } break;
-    case IN_OP:
-    case NOT_IN_OP: {
-      result = false;
-      rc     = RC::UNSUPPORTED;
+    case IS_NOT_NULL: {
+      result = !left.is_null();
     } break;
     default: {
-      LOG_WARN("unsupported comparison. %d", comp_);
-      rc = RC::INTERNAL;
+      if (left.is_null() || right.is_null()) {
+        result = false;
+        return RC::SUCCESS;
+      }
+      int cmp_result = left.compare(right);
+      switch (comp_) {
+        case EQUAL_TO: {
+          result = (0 == cmp_result);
+        } break;
+        case LESS_EQUAL: {
+          result = (cmp_result <= 0);
+        } break;
+        case NOT_EQUAL: {
+          result = (cmp_result != 0);
+        } break;
+        case LESS_THAN: {
+          result = (cmp_result < 0);
+        } break;
+        case GREAT_EQUAL: {
+          result = (cmp_result >= 0);
+        } break;
+        case GREAT_THAN: {
+          result = (cmp_result > 0);
+        } break;
+        case LIKE_OP: {
+          if (left.attr_type() != AttrType::CHARS || right.attr_type() != AttrType::CHARS) {
+            LOG_WARN("LIKE only supports CHAR type. left=%s, right=%s",
+                attr_type_to_string(left.attr_type()), attr_type_to_string(right.attr_type()));
+            return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+          }
+          result = like_match(left.get_string(), right.get_string());
+        } break;
+        default: {
+          LOG_WARN("unsupported comparison. %d", comp_);
+          rc = RC::INTERNAL;
+        } break;
+      }
     } break;
   }
 
@@ -295,12 +252,12 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
   Value left_value;
   Value right_value;
 
-  RC rc = left_->get_value(tuple, left_value);
+  RC rc = get_comparison_operand_value(tuple, *left_, left_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
-  rc = right_->get_value(tuple, right_value);
+  rc = get_comparison_operand_value(tuple, *right_, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;
@@ -823,87 +780,5 @@ RC FunctionExpr::type_from_string(const char *name, FuncType &type)
   } else {
     return RC::INVALID_ARGUMENT;
   }
-  return RC::SUCCESS;
-}
-
-SubQueryExpr::SubQueryExpr(unique_ptr<ParsedSqlNode> sql_node) : sql_node_(std::move(sql_node)) {}
-
-RC SubQueryExpr::get_value(const Tuple &tuple, Value &value) const
-{
-  if (!bound_ || stmt_ == nullptr) {
-    return RC::INTERNAL;
-  }
-
-  vector<Value> values;
-  RC rc = execute_sub_query_stmt(*stmt_, values);
-  if (OB_FAIL(rc)) {
-    return rc;
-  }
-
-  if (values.empty()) {
-    value.set_type(value_type_);
-    value.set_null();
-    value.set_type(value_type_);
-    return RC::SUCCESS;
-  }
-
-  if (values.size() != 1) {
-    LOG_WARN("scalar sub query returns more than one row");
-    return RC::INVALID_ARGUMENT;
-  }
-
-  value = values[0];
-  return RC::SUCCESS;
-}
-
-InSubQueryExpr::InSubQueryExpr(unique_ptr<Expression> left, unique_ptr<SubQueryExpr> sub_query_expr, bool not_in)
-    : left_(std::move(left)), sub_query_expr_(std::move(sub_query_expr)), not_in_(not_in)
-{}
-
-RC InSubQueryExpr::get_value(const Tuple &tuple, Value &value) const
-{
-  if (sub_query_expr_ == nullptr || !sub_query_expr_->is_bound() || sub_query_expr_->stmt() == nullptr) {
-    return RC::INTERNAL;
-  }
-
-  Value left_value;
-  RC    rc = left_->get_value(tuple, left_value);
-  if (OB_FAIL(rc)) {
-    return rc;
-  }
-
-  vector<Value> values;
-  rc = execute_sub_query_stmt(*sub_query_expr_->stmt(), values);
-  if (OB_FAIL(rc)) {
-    return rc;
-  }
-
-  bool matched = false;
-  bool has_null = false;
-  for (const Value &item : values) {
-    if (item.is_null()) {
-      has_null = true;
-      continue;
-    }
-    if (left_value.is_null()) {
-      continue;
-    }
-    if (left_value.compare(item) == 0) {
-      matched = true;
-      break;
-    }
-  }
-
-  if (left_value.is_null()) {
-    value.set_boolean(false);
-    return RC::SUCCESS;
-  }
-
-  if (!matched && has_null) {
-    value.set_boolean(false);
-    return RC::SUCCESS;
-  }
-
-  value.set_boolean(not_in_ ? !matched : matched);
   return RC::SUCCESS;
 }

@@ -36,7 +36,7 @@ public:
   StmtType type() const override { return StmtType::SELECT; }
 
 public:
-  static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt);
+  static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt, class BinderContext *parent_context = nullptr);
 
 public:
   const vector<Table *> &tables() const { return tables_; }
@@ -44,11 +44,15 @@ public:
   unique_ptr<Expression> &where_expression() { return where_expression_; }
 
   vector<unique_ptr<Expression>> &query_expressions() { return query_expressions_; }
+  const vector<unique_ptr<Expression>> &query_expressions() const { return query_expressions_; }
   vector<unique_ptr<Expression>> &group_by() { return group_by_; }
   vector<vector<unique_ptr<Expression>>> &join_predicates() { return join_predicates_; }
+  const vector<vector<unique_ptr<Expression>>> &join_predicates() const { return join_predicates_; }
   vector<unique_ptr<Expression>>         &order_by() { return order_by_; }
   vector<bool>                           &order_by_flags() { return order_by_flags_; }
   unique_ptr<Expression>                 &having_expression() { return having_expression_; }
+  const unique_ptr<Expression>           &having_expression() const { return having_expression_; }
+  const unique_ptr<Expression>           &where_expression() const { return where_expression_; }
 
 private:
   vector<unique_ptr<Expression>>                  query_expressions_;

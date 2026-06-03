@@ -11,6 +11,8 @@
 #include "sql/parser/yacc_sql.hpp"
 #include "sql/parser/lex_sql.h"
 #include "sql/expr/expression.h"
+#include "sql/expr/subquery_expr.h"
+#include "sql/parser/parse_defs.h"
 
 using namespace std;
 
@@ -96,9 +98,14 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         DROP
         GROUP
         HAVING
+        IN
+        NOT
+        NULL_T
+        IS
         TABLE
         TABLES
         INDEX
+        UNIQUE
         CALC
         SELECT
         DESC
@@ -124,16 +131,12 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         EXIT
         DOT //QUOTE
         INTO
-        IN
         VALUES
         FROM
         INNER
         JOIN
         WHERE
-        IS
         AND
-        NOT
-        NULL_T
         SET
         ON
         LOAD
@@ -170,10 +173,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
   AttrInfoSqlNode *                          attr_info;
   Expression *                               expression;
   vector<unique_ptr<Expression>> *           expression_list;
-  vector<unique_ptr<Expression>> *           where_expression_list;
   vector<Value> *                            value_list;
   vector<ConditionSqlNode> *                 condition_list;
-  SubQuerySqlNode *                          sub_query;
   vector<RelAttrSqlNode> *                   rel_attr_list;
   vector<string> *                           relation_list;
   FromSqlNode *                              from_sql;
@@ -190,10 +191,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %destructor { delete $$; } <attr_infos>
 %destructor { delete $$; } <expression>
 %destructor { delete $$; } <expression_list>
-%destructor { delete $$; } <where_expression_list>
 %destructor { delete $$; } <value_list>
 %destructor { delete $$; } <condition_list>
-%destructor { delete $$; } <sub_query>
 // %destructor { delete $$; } <rel_attr_list>
 %destructor { delete $$; } <relation_list>
 %destructor { delete $$; } <from_sql>
@@ -218,9 +217,12 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <attr_info>           attr_def
 %type <value_list>          value_list
 %type <condition_list>      where
-%type <where_expression_list> select_where
-%type <where_expression_list> where_condition_list
 %type <condition_list>      condition_list
+%type <expression_list>     select_where
+%type <expression_list>     subquery_where
+%type <expression_list>     where_predicate_list
+%type <expression>          where_predicate
+%type <expression>          select_subquery
 %type <cstring>             storage_format
 %type <key_list>            primary_key
 %type <key_list>            attr_list
@@ -229,8 +231,6 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <expression>          expression
 %type <expression>          aggregate_expression
 %type <expression>          function_expression
-%type <sub_query>           sub_query
-%type <expression>          where_condition
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <expression_list>     having
@@ -368,9 +368,22 @@ create_index_stmt:    /*create index 语句的语法解析树*/
       CreateIndexSqlNode &create_index = $$->create_index;
       create_index.index_name = $3;
       create_index.relation_name = $5;
+      create_index.unique = false;
       if ($7 != nullptr) {
         create_index.attribute_names.swap(*$7);
         delete $7;
+      }
+    }
+    | CREATE UNIQUE INDEX ID ON ID LBRACE attr_list RBRACE
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
+      CreateIndexSqlNode &create_index = $$->create_index;
+      create_index.index_name = $4;
+      create_index.relation_name = $6;
+      create_index.unique = true;
+      if ($8 != nullptr) {
+        create_index.attribute_names.swap(*$8);
+        delete $8;
       }
     }
     ;
@@ -420,13 +433,29 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
       $$->nullable = true;
+    }
+    | ID type LBRACE number RBRACE NULL_T
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = $4;
+      $$->nullable = true;
+    }
+    | ID type LBRACE number RBRACE NOT NULL_T
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = $4;
+      $$->nullable = false;
     }
     | ID type
     {
@@ -450,22 +479,6 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = 4;
-      $$->nullable = false;
-    }
-    | ID type LBRACE number RBRACE NULL_T
-    {
-      $$ = new AttrInfoSqlNode;
-      $$->type = (AttrType)$2;
-      $$->name = $1;
-      $$->length = $4;
-      $$->nullable = true;
-    }
-    | ID type LBRACE number RBRACE NOT NULL_T
-    {
-      $$ = new AttrInfoSqlNode;
-      $$->type = (AttrType)$2;
-      $$->name = $1;
-      $$->length = $4;
       $$->nullable = false;
     }
     ;
@@ -543,7 +556,7 @@ value:
       $$ = new Value(tmp);
       free(tmp);
     }
-    | NULL_T {
+    |NULL_T {
       $$ = new Value();
       $$->set_null();
       @$ = @1;
@@ -572,12 +585,12 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     }
     ;
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value where 
+    UPDATE ID SET ID EQ expression where 
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
       $$->update.attribute_name = $4;
-      $$->update.value = *$6;
+      $$->update.value_expr.reset($6);
       if ($7 != nullptr) {
         $$->update.conditions.swap(*$7);
         delete $7;
@@ -600,7 +613,7 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       if ($5 != nullptr) {
-        $$->selection.where_conditions.swap(*$5);
+        $$->selection.filter_exprs.swap(*$5);
         delete $5;
       }
 
@@ -658,6 +671,10 @@ expression:
     | expression '/' expression {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::DIV, $1, $3, sql_string, &@$);
     }
+    | LBRACE select_subquery RBRACE {
+      $$ = $2;
+      $$->set_name(token_name(sql_string, &@$));
+    }
     | LBRACE expression RBRACE {
       $$ = $2;
       $$->set_name(token_name(sql_string, &@$));
@@ -684,19 +701,6 @@ expression:
     }
     | function_expression {
       $$ = $1;
-    }
-    | sub_query {
-      $$ = new SubQueryExpr(std::move($1->sql_node));
-      $$->set_name(token_name(sql_string, &@$));
-      delete $1;
-    }
-    ;
-
-sub_query:
-    LBRACE select_stmt RBRACE
-    {
-      $$ = new SubQuerySqlNode;
-      $$->sql_node.reset($2);
     }
     ;
 
@@ -785,31 +789,146 @@ where:
       $$ = $2;  
     }
     ;
+
 select_where:
     /* empty */
     {
       $$ = nullptr;
     }
-    | WHERE where_condition_list {
+    | WHERE where_predicate_list {
       $$ = $2;
     }
     ;
-where_condition_list:
-    where_condition
-    {
+
+where_predicate_list:
+    where_predicate {
       $$ = new vector<unique_ptr<Expression>>;
       $$->emplace_back($1);
     }
-    | where_condition AND where_condition_list
-    {
-      if ($3 != nullptr) {
-        $$ = $3;
-      } else {
-        $$ = new vector<unique_ptr<Expression>>;
-      }
+    | where_predicate AND where_predicate_list {
+      $$ = $3;
       $$->emplace($$->begin(), $1);
     }
     ;
+
+where_predicate:
+    rel_attr comp_op expression
+    {
+      RelAttrSqlNode *attr = $1;
+      $$ = create_comparison_expression($2,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          $3, sql_string, &@$);
+      delete $1;
+    }
+    | expression comp_op rel_attr
+    {
+      RelAttrSqlNode *attr = $3;
+      $$ = create_comparison_expression($2, $1,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          sql_string, &@$);
+      delete $3;
+    }
+    | LBRACE select_subquery RBRACE comp_op expression
+    {
+      $$ = create_comparison_expression($4, $2, $5, sql_string, &@$);
+    }
+    | LBRACE select_subquery RBRACE comp_op rel_attr
+    {
+      RelAttrSqlNode *attr = $5;
+      $$ = create_comparison_expression($4, $2,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          sql_string, &@$);
+      delete $5;
+    }
+    | rel_attr comp_op value
+    {
+      RelAttrSqlNode *attr = $1;
+      $$ = create_comparison_expression($2,
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          new ValueExpr(*$3), sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | value comp_op value
+    {
+      $$ = create_comparison_expression($2, new ValueExpr(*$1), new ValueExpr(*$3), sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | rel_attr comp_op rel_attr
+    {
+      RelAttrSqlNode *lattr = $1;
+      RelAttrSqlNode *rattr = $3;
+      $$ = create_comparison_expression($2,
+          new UnboundFieldExpr(lattr->relation_name, lattr->attribute_name),
+          new UnboundFieldExpr(rattr->relation_name, rattr->attribute_name),
+          sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | value comp_op rel_attr
+    {
+      RelAttrSqlNode *attr = $3;
+      $$ = create_comparison_expression($2,
+          new ValueExpr(*$1),
+          new UnboundFieldExpr(attr->relation_name, attr->attribute_name),
+          sql_string, &@$);
+      delete $1;
+      delete $3;
+    }
+    | expression comp_op expression
+    {
+      $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
+    }
+    | expression IN LBRACE select_subquery RBRACE
+    {
+      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), unique_ptr<Expression>($4), false);
+    }
+    | expression NOT IN LBRACE select_subquery RBRACE
+    {
+      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), unique_ptr<Expression>($5), true);
+    }
+    | expression IS NULL_T
+    {
+      $$ = create_comparison_expression(IS_NULL, $1, new ValueExpr(Value()), sql_string, &@$);
+    }
+    | expression IS NOT NULL_T
+    {
+      $$ = create_comparison_expression(IS_NOT_NULL, $1, new ValueExpr(Value()), sql_string, &@$);
+    }
+    ;
+
+select_subquery:
+    SELECT expression_list FROM from_list subquery_where
+    {
+      SelectSqlNode node;
+      if ($2 != nullptr) {
+        node.expressions.swap(*$2);
+        delete $2;
+      }
+      if ($4 != nullptr) {
+        node.relations.swap($4->relations);
+        node.join_conditions.swap($4->join_conditions);
+        delete $4;
+      }
+      if ($5 != nullptr) {
+        node.filter_exprs.swap(*$5);
+        delete $5;
+      }
+      $$ = new UnboundSubQueryExpr(std::move(node));
+    }
+    ;
+
+subquery_where:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | WHERE where_predicate_list {
+      $$ = $2;
+    }
+    ;
+
 condition_list:
     /* empty */
     {
@@ -824,46 +943,6 @@ condition_list:
       $$ = $3;
       $$->emplace_back(*$1);
       delete $1;
-    }
-    ;
-where_condition:
-    expression comp_op expression
-    {
-      $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
-    }
-    | expression comp_op sub_query
-    {
-      $$ = create_comparison_expression($2, $1, new SubQueryExpr(std::move($3->sql_node)), sql_string, &@$);
-      delete $3;
-    }
-    | sub_query comp_op expression
-    {
-      $$ = create_comparison_expression($2, new SubQueryExpr(std::move($1->sql_node)), $3, sql_string, &@$);
-      delete $1;
-    }
-    | expression IN sub_query
-    {
-      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), make_unique<SubQueryExpr>(std::move($3->sql_node)), false);
-      $$->set_name(token_name(sql_string, &@$));
-      delete $3;
-    }
-    | expression NOT IN sub_query
-    {
-      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), make_unique<SubQueryExpr>(std::move($4->sql_node)), true);
-      $$->set_name(token_name(sql_string, &@$));
-      delete $4;
-    }
-    | expression IS NULL_T
-    {
-      Value null_value;
-      null_value.set_null();
-      $$ = create_comparison_expression(IS_NULL, $1, new ValueExpr(null_value), sql_string, &@$);
-    }
-    | expression IS NOT NULL_T
-    {
-      Value null_value;
-      null_value.set_null();
-      $$ = create_comparison_expression(IS_NOT_NULL, $1, new ValueExpr(null_value), sql_string, &@$);
     }
     ;
 condition:
@@ -915,46 +994,6 @@ condition:
       delete $1;
       delete $3;
     }
-    | rel_attr IS NULL_T
-    {
-      $$ = new ConditionSqlNode;
-      $$->left_is_attr = 1;
-      $$->left_attr = *$1;
-      $$->right_is_attr = 0;
-      $$->right_value.set_null();
-      $$->comp = IS_NULL;
-      delete $1;
-    }
-    | rel_attr IS NOT NULL_T
-    {
-      $$ = new ConditionSqlNode;
-      $$->left_is_attr = 1;
-      $$->left_attr = *$1;
-      $$->right_is_attr = 0;
-      $$->right_value.set_null();
-      $$->comp = IS_NOT_NULL;
-      delete $1;
-    }
-    | value IS NULL_T
-    {
-      $$ = new ConditionSqlNode;
-      $$->left_is_attr = 0;
-      $$->left_value = *$1;
-      $$->right_is_attr = 0;
-      $$->right_value.set_null();
-      $$->comp = IS_NULL;
-      delete $1;
-    }
-    | value IS NOT NULL_T
-    {
-      $$ = new ConditionSqlNode;
-      $$->left_is_attr = 0;
-      $$->left_value = *$1;
-      $$->right_is_attr = 0;
-      $$->right_value.set_null();
-      $$->comp = IS_NOT_NULL;
-      delete $1;
-    }
     ;
 
 comp_op:
@@ -1003,7 +1042,12 @@ having:
     ;
 
 having_condition:
-    expression comp_op expression
+    expression comp_op value
+    {
+      $$ = create_comparison_expression($2, $1, new ValueExpr(*$3), sql_string, &@$);
+      delete $3;
+    }
+    | expression comp_op expression
     {
       $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
     }

@@ -204,6 +204,10 @@ def parse_query_output(stdout: str, sql: str) -> SqlResult:
 
 def parse_last_scalar(stdout: str, column: str = "") -> Optional[str]:
     """Return the single cell from the last SELECT result."""
+    if not stdout:
+        return None
+    if isinstance(stdout, bytes):
+        stdout = stdout.decode("utf-8", errors="replace")
     start = stdout.find("Successfully load")
     if start < 0:
         return None

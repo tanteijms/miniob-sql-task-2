@@ -10,7 +10,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/value.h"
+#include "sql/expr/expression.h"
 #include "sql/operator/physical_operator.h"
 
 class FieldMeta;
@@ -23,10 +23,7 @@ class Trx;
 class UpdatePhysicalOperator : public PhysicalOperator
 {
 public:
-  UpdatePhysicalOperator(Table *table, const FieldMeta *field, const Value &value)
-      : table_(table), field_(field), value_(value)
-  {}
-
+  UpdatePhysicalOperator(Table *table, const FieldMeta *field, unique_ptr<Expression> value_expr);
   ~UpdatePhysicalOperator() override = default;
 
   PhysicalOperatorType type() const override { return PhysicalOperatorType::UPDATE; }
@@ -39,9 +36,12 @@ public:
   Tuple *current_tuple() override { return nullptr; }
 
 private:
-  Table           *table_ = nullptr;
-  const FieldMeta *field_ = nullptr;
-  Value            value_;
-  Trx             *trx_   = nullptr;
-  vector<Record>   records_;
+  RC rollback_updates();
+
+  Table                  *table_ = nullptr;
+  const FieldMeta        *field_ = nullptr;
+  unique_ptr<Expression>  value_expr_;
+  Trx                    *trx_   = nullptr;
+  vector<Record>          records_;
+  vector<Record>          updated_new_records_;
 };

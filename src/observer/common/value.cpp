@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/sstream.h"
 #include "common/lang/string.h"
 #include "common/log/log.h"
+#include <climits>
 
 Value::Value(int val) { set_int(val); }
 
@@ -37,6 +38,9 @@ Value::Value(const Value &other)
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
   this->is_null_   = other.is_null_;
+  if (is_null_) {
+    return;
+  }
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -56,8 +60,8 @@ Value::Value(Value &&other)
   this->is_null_   = other.is_null_;
   this->value_     = other.value_;
   other.own_data_  = false;
-  other.length_    = 0;
   other.is_null_   = false;
+  other.length_    = 0;
 }
 
 Value &Value::operator=(const Value &other)
@@ -70,6 +74,9 @@ Value &Value::operator=(const Value &other)
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
   this->is_null_   = other.is_null_;
+  if (is_null_) {
+    return *this;
+  }
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -94,8 +101,8 @@ Value &Value::operator=(Value &&other)
   this->is_null_   = other.is_null_;
   this->value_     = other.value_;
   other.own_data_  = false;
-  other.length_    = 0;
   other.is_null_   = false;
+  other.length_    = 0;
   return *this;
 }
 
@@ -117,9 +124,21 @@ void Value::reset()
   is_null_   = false;
 }
 
+void Value::set_null()
+{
+  reset();
+  is_null_ = true;
+}
+
+void Value::set_null(AttrType type)
+{
+  reset();
+  is_null_   = true;
+  attr_type_ = type;
+}
+
 void Value::set_data(char *data, int length)
 {
-  is_null_ = false;
   switch (attr_type_) {
     case AttrType::CHARS: {
       set_string(data, length);
@@ -149,7 +168,6 @@ void Value::set_int(int val)
   attr_type_        = AttrType::INTS;
   value_.int_value_ = val;
   length_           = sizeof(val);
-  is_null_          = false;
 }
 
 void Value::set_date(int val)
@@ -158,7 +176,6 @@ void Value::set_date(int val)
   attr_type_        = AttrType::DATES;
   value_.int_value_ = val;
   length_           = sizeof(val);
-  is_null_          = false;
 }
 
 void Value::set_float(float val)
@@ -167,7 +184,6 @@ void Value::set_float(float val)
   attr_type_          = AttrType::FLOATS;
   value_.float_value_ = val;
   length_             = sizeof(val);
-  is_null_            = false;
 }
 void Value::set_boolean(bool val)
 {
@@ -175,14 +191,12 @@ void Value::set_boolean(bool val)
   attr_type_         = AttrType::BOOLEANS;
   value_.bool_value_ = val;
   length_            = sizeof(val);
-  is_null_           = false;
 }
 
 void Value::set_string(const char *s, int len /*= 0*/)
 {
   reset();
   attr_type_ = AttrType::CHARS;
-  is_null_   = false;
   if (s == nullptr) {
     value_.pointer_value_ = nullptr;
     length_               = 0;
@@ -204,7 +218,6 @@ void Value::set_empty_string(int len)
 {
   reset();
   attr_type_ = AttrType::CHARS;
-  is_null_   = false;
 
   own_data_ = true;
   value_.pointer_value_ = new char[len + 1];
@@ -214,21 +227,12 @@ void Value::set_empty_string(int len)
   
 }
 
-void Value::set_null()
-{
-  reset();
-  is_null_ = true;
-}
-
 void Value::set_value(const Value &value)
 {
-  if (value.is_null()) {
-    reset();
-    attr_type_ = value.attr_type_;
-    is_null_   = true;
+  if (value.is_null_) {
+    set_null(value.attr_type_);
     return;
   }
-
   switch (value.attr_type_) {
     case AttrType::INTS: {
       set_int(value.get_int());
@@ -289,23 +293,14 @@ string Value::to_string() const
 
 int Value::compare(const Value &other) const
 {
-  if (is_null_ && other.is_null()) {
-    return 0;
-  }
-  if (is_null_) {
-    return -1;
-  }
-  if (other.is_null()) {
-    return 1;
+  if (is_null_ || other.is_null_) {
+    return INT32_MAX;
   }
   return DataType::type_instance(this->attr_type_)->compare(*this, other);
 }
 
 int Value::get_int() const
 {
-  if (is_null_) {
-    return 0;
-  }
   switch (attr_type_) {
     case AttrType::CHARS: {
       try {
@@ -335,9 +330,6 @@ int Value::get_int() const
 
 float Value::get_float() const
 {
-  if (is_null_) {
-    return 0;
-  }
   switch (attr_type_) {
     case AttrType::CHARS: {
       try {
@@ -374,9 +366,6 @@ string_t Value::get_string_t() const
 
 bool Value::get_boolean() const
 {
-  if (is_null_) {
-    return false;
-  }
   switch (attr_type_) {
     case AttrType::CHARS: {
       try {

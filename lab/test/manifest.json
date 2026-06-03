@@ -99,7 +99,47 @@
       "feature": "function",
       "points": 2,
       "file": "test/case/test/primary-expression.test",
-      "expected_failure": 1,
+      "expected_failure": 2,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-unique",
+      "name": "primary-unique",
+      "category": "official",
+      "feature": "unique",
+      "points": 2,
+      "file": "test/case/test/primary-unique.test",
+      "expected_failure": 2,
+      "timeout_sec": 30
+    },
+    {
+      "id": "official-simple-sub-query",
+      "name": "primary-simple-sub-query",
+      "category": "official",
+      "feature": "simple-sub-query",
+      "points": 4,
+      "file": "test/case/test/primary-simple-sub-query.test",
+      "expected_failure": 4,
+      "timeout_sec": 60
+    },
+    {
+      "id": "official-complex-sub-query",
+      "name": "primary-complex-sub-query",
+      "category": "official",
+      "feature": "complex-sub-query",
+      "points": 5,
+      "file": "test/case/test/primary-complex-sub-query.test",
+      "expected_failure": 4,
+      "timeout_sec": 60
+    },
+    {
+      "id": "official-null",
+      "name": "primary-null",
+      "category": "official",
+      "feature": "null",
+      "points": 3,
+      "file": "test/case/test/primary-null.test",
+      "expected_failure": 2,
       "timeout_sec": 30
     },
     {
@@ -257,6 +297,63 @@
       "timeout_sec": 60
     },
     {
+      "id": "custom-unique",
+      "name": "unique.sql",
+      "category": "custom",
+      "feature": "unique",
+      "points": 2,
+      "file": "lab/test/cases/sql/unique.sql",
+      "expected_failure": 2,
+      "timeout_sec": 30,
+      "assertions": [
+        {
+          "name": "row count",
+          "sql": "SELECT count(*) FROM unique_table;",
+          "rows": [["3"]]
+        }
+      ]
+    },
+    {
+      "id": "custom-simple-sub-query",
+      "name": "simple-sub-query.sql",
+      "category": "custom",
+      "feature": "simple-sub-query",
+      "points": 4,
+      "file": "lab/test/cases/sql/simple-sub-query.sql",
+      "expected_failure": 0,
+      "timeout_sec": 60
+    },
+    {
+      "id": "custom-complex-sub-query",
+      "name": "complex-sub-query.sql",
+      "category": "custom",
+      "feature": "complex-sub-query",
+      "points": 5,
+      "file": "lab/test/cases/sql/complex-sub-query.sql",
+      "expected_failure": 0,
+      "timeout_sec": 60
+    },
+    {
+      "id": "custom-null",
+      "name": "null.sql",
+      "category": "custom",
+      "feature": "null",
+      "points": 3,
+      "file": "lab/test/cases/sql/null.sql",
+      "expected_failure": 1,
+      "timeout_sec": 30
+    },
+    {
+      "id": "custom-update-select",
+      "name": "update-select.sql",
+      "category": "custom",
+      "feature": "update-select",
+      "points": 4,
+      "file": "lab/test/cases/sql/update-select.sql",
+      "expected_failure": 2,
+      "timeout_sec": 60
+    },
+    {
       "id": "stress-big-write",
       "name": "big-write (500 ops)",
       "category": "stress",
@@ -277,6 +374,18 @@
       "expected_rows": 1680,
       "restart_check": false,
       "timeout_sec": 300,
+      "tags": ["slow"]
+    },
+    {
+      "id": "stress-big-query",
+      "name": "big-query (800 rows + join/group/subquery)",
+      "category": "stress",
+      "feature": "big-query",
+      "points": 5,
+      "generator": "lab/test/stress/gen_big_query_sql.py",
+      "expected_rows": 800,
+      "restart_check": false,
+      "timeout_sec": 90,
       "tags": ["slow"]
     }
   ]

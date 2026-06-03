@@ -52,8 +52,6 @@ enum CompOp
   GREAT_EQUAL,  ///< ">="
   GREAT_THAN,   ///< ">"
   LIKE_OP,      ///< "LIKE"
-  IN_OP,        ///< "IN"
-  NOT_IN_OP,    ///< "NOT IN"
   IS_NULL,      ///< "IS NULL"
   IS_NOT_NULL,  ///< "IS NOT NULL"
   NO_OP
@@ -111,7 +109,8 @@ struct SelectSqlNode
   vector<unique_ptr<Expression>> expressions;  ///< 查询的表达式
   vector<string>                 relations;    ///< 查询的表（与 from.relations 同步）
   vector<vector<ConditionSqlNode>> join_conditions;  ///< 见 FromSqlNode
-  vector<unique_ptr<Expression>> where_conditions;  ///< where clause (ComparisonExpr list, AND)
+  vector<ConditionSqlNode>       conditions;   ///< 旧式 WHERE（兼容 delete/update）
+  vector<unique_ptr<Expression>> filter_exprs; ///< 表达式 WHERE（SELECT 子查询等）
   vector<unique_ptr<Expression>> group_by;     ///< group by clause
   vector<unique_ptr<Expression>> having;       ///< having clause (ComparisonExpr list, AND)
   vector<OrderBySqlNode>         order_by;     ///< order by clause
@@ -155,7 +154,7 @@ struct UpdateSqlNode
 {
   string                   relation_name;   ///< Relation to update
   string                   attribute_name;  ///< 更新的字段，仅支持一个字段
-  Value                    value;           ///< 更新的值，仅支持一个字段
+  unique_ptr<Expression>   value_expr;      ///< SET 右值（字面量/子查询/表达式）
   vector<ConditionSqlNode> conditions;
 };
 
@@ -166,10 +165,10 @@ struct UpdateSqlNode
  */
 struct AttrInfoSqlNode
 {
-  AttrType type;    ///< Type of attribute
-  string   name;    ///< Attribute name
-  size_t   length;  ///< Length of attribute
-  bool     nullable = true;
+  AttrType type;       ///< Type of attribute
+  string   name;       ///< Attribute name
+  size_t   length;     ///< Length of attribute
+  bool     nullable = true;  ///< Whether NULL values are allowed
 };
 
 /**
@@ -216,6 +215,7 @@ struct CreateIndexSqlNode
   string         index_name;      ///< Index name
   string         relation_name;   ///< Relation name
   vector<string> attribute_names; ///< Attribute names (composite index)
+  bool           unique = false;  ///< UNIQUE index
 };
 
 /**
@@ -263,11 +263,6 @@ struct SetVariableSqlNode
 };
 
 class ParsedSqlNode;
-
-struct SubQuerySqlNode
-{
-  unique_ptr<ParsedSqlNode> sql_node;
-};
 
 /**
  * @brief 描述一个explain语句

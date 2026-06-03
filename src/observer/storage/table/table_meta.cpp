@@ -35,19 +35,17 @@ TableMeta::TableMeta(const TableMeta &other)
       indexes_(other.indexes_),
       storage_format_(other.storage_format_),
       storage_engine_(other.storage_engine_),
-      record_size_(other.record_size_)
+      record_size_(other.record_size_),
+      null_bitmap_offset_(other.null_bitmap_offset_),
+      null_bitmap_size_(other.null_bitmap_size_),
+      user_field_num_(other.user_field_num_)
 {}
 
 void TableMeta::swap(TableMeta &other) noexcept
 {
   name_.swap(other.name_);
-  trx_fields_.swap(other.trx_fields_);
   fields_.swap(other.fields_);
   indexes_.swap(other.indexes_);
-  primary_keys_.swap(other.primary_keys_);
-  std::swap(table_id_, other.table_id_);
-  std::swap(storage_format_, other.storage_format_);
-  std::swap(storage_engine_, other.storage_engine_);
   std::swap(record_size_, other.record_size_);
 }
 
@@ -76,8 +74,7 @@ RC TableMeta::init(int32_t table_id, const char *name, const vector<FieldMeta> *
     fields_.resize(attributes.size() + trx_fields->size());
     for (size_t i = 0; i < trx_fields->size(); i++) {
       const FieldMeta &field_meta = (*trx_fields)[i];
-      fields_[i] = FieldMeta(
-          field_meta.name(), field_meta.type(), field_offset, field_meta.len(), false /*visible*/, field_meta.field_id(), field_meta.nullable());
+      fields_[i] = FieldMeta(field_meta.name(), field_meta.type(), field_offset, field_meta.len(), false /*visible*/, field_meta.field_id());
       field_offset += field_meta.len();
     }
 
@@ -86,14 +83,16 @@ RC TableMeta::init(int32_t table_id, const char *name, const vector<FieldMeta> *
     fields_.resize(attributes.size());
   }
 
-  const int null_bitmap_len = static_cast<int>((attributes.size() + 7) / 8);
-  field_offset += null_bitmap_len;
+  user_field_num_    = static_cast<int>(attributes.size());
+  null_bitmap_offset_ = field_offset;
+  null_bitmap_size_   = (user_field_num_ + 7) / 8;
+  field_offset += null_bitmap_size_;
 
   for (size_t i = 0; i < attributes.size(); i++) {
     const AttrInfoSqlNode &attr_info = attributes[i];
     // `i` is the col_id of fields[i]
     rc = fields_[i + trx_field_num].init(
-      attr_info.name.c_str(), attr_info.type, field_offset, attr_info.length, true /*visible*/, i, attr_info.nullable);
+        attr_info.name.c_str(), attr_info.type, field_offset, attr_info.length, true /*visible*/, i, attr_info.nullable);
     if (OB_FAIL(rc)) {
       LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name, attr_info.name.c_str());
       return rc;
@@ -181,22 +180,26 @@ int TableMeta::index_num() const { return indexes_.size(); }
 
 int TableMeta::record_size() const { return record_size_; }
 
-int TableMeta::null_bitmap_len() const { return (user_field_num() + 7) / 8; }
-
-int TableMeta::null_bitmap_offset() const
+bool TableMeta::field_is_null(const char *record, int field_id) const
 {
-  if (sys_field_num() == 0) {
-    return 0;
+  if (null_bitmap_size_ <= 0 || field_id < 0 || field_id >= user_field_num_) {
+    return false;
   }
-  const FieldMeta &last_sys_field = fields_[sys_field_num() - 1];
-  return last_sys_field.offset() + last_sys_field.len();
+  const unsigned char *bitmap = reinterpret_cast<const unsigned char *>(record + null_bitmap_offset_);
+  return (bitmap[field_id / 8] & (1 << (field_id % 8))) != 0;
 }
 
-int TableMeta::user_field_num() const { return field_num() - sys_field_num(); }
-
-int TableMeta::user_field_index(const FieldMeta &field) const
+void TableMeta::set_field_null(char *record, int field_id, bool is_null) const
 {
-  return field.field_id();
+  if (null_bitmap_size_ <= 0 || field_id < 0 || field_id >= user_field_num_) {
+    return;
+  }
+  unsigned char *bitmap = reinterpret_cast<unsigned char *>(record + null_bitmap_offset_);
+  if (is_null) {
+    bitmap[field_id / 8] |= static_cast<unsigned char>(1 << (field_id % 8));
+  } else {
+    bitmap[field_id / 8] &= static_cast<unsigned char>(~(1 << (field_id % 8)));
+  }
 }
 
 int TableMeta::serialize(ostream &ss) const
@@ -316,9 +319,23 @@ int TableMeta::deserialize(istream &is)
   fields_.swap(fields);
   record_size_ = fields_.back().offset() + fields_.back().len() - fields_.begin()->offset();
 
+  trx_fields_.clear();
+  int trx_data_size = 0;
+  user_field_num_   = 0;
   for (const FieldMeta &field_meta : fields_) {
     if (!field_meta.visible()) {
-      trx_fields_.push_back(field_meta); // 字段加上trx标识更好
+      trx_fields_.push_back(field_meta);
+      trx_data_size += field_meta.len();
+    } else {
+      user_field_num_++;
+    }
+  }
+  null_bitmap_offset_ = trx_data_size;
+  null_bitmap_size_   = 0;
+  for (const FieldMeta &field_meta : fields_) {
+    if (field_meta.visible()) {
+      null_bitmap_size_ = field_meta.offset() - trx_data_size;
+      break;
     }
   }
 

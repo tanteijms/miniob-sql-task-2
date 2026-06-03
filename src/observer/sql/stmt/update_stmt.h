@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 class Table;
 class FilterStmt;
 class FieldMeta;
+class Expression;
 
 /**
  * @brief 更新语句
@@ -27,7 +28,7 @@ class FieldMeta;
 class UpdateStmt : public Stmt
 {
 public:
-  UpdateStmt(Table *table, FilterStmt *filter_stmt, const FieldMeta *field, const Value &value);
+  UpdateStmt(Table *table, FilterStmt *filter_stmt, const FieldMeta *field, unique_ptr<Expression> value_expr);
   ~UpdateStmt() override;
 
   StmtType type() const override { return StmtType::UPDATE; }
@@ -35,13 +36,13 @@ public:
   Table            *table() const { return table_; }
   FilterStmt       *filter_stmt() const { return filter_stmt_; }
   const FieldMeta  *field() const { return field_; }
-  const Value      &value() const { return value_; }
+  unique_ptr<Expression> &value_expr() { return value_expr_; }
 
-  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
+  static RC create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt);
 
 private:
-  Table            *table_       = nullptr;
-  FilterStmt       *filter_stmt_ = nullptr;
-  const FieldMeta  *field_       = nullptr;
-  Value             value_;
+  Table                   *table_       = nullptr;
+  FilterStmt              *filter_stmt_ = nullptr;
+  const FieldMeta         *field_       = nullptr;
+  unique_ptr<Expression>   value_expr_;
 };

@@ -16,6 +16,8 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 
+class Db;
+
 class BinderContext
 {
 public:
@@ -23,16 +25,20 @@ public:
   virtual ~BinderContext() = default;
 
   void add_table(Table *table) { query_tables_.push_back(table); }
-  void set_db(Db *db) { db_ = db; }
+
+  void set_parent(BinderContext *parent) { parent_ = parent; }
+
+  BinderContext *parent() const { return parent_; }
 
   Table *find_table(const char *table_name) const;
-  Db    *db() const { return db_; }
+
+  bool is_local_table(Table *table) const;
 
   const vector<Table *> &query_tables() const { return query_tables_; }
 
 private:
   vector<Table *> query_tables_;
-  Db             *db_ = nullptr;
+  BinderContext  *parent_ = nullptr;
 };
 
 /**
@@ -42,7 +48,7 @@ private:
 class ExpressionBinder
 {
 public:
-  ExpressionBinder(BinderContext &context) : context_(context) {}
+  ExpressionBinder(BinderContext &context, Db *db = nullptr) : context_(context), db_(db) {}
   virtual ~ExpressionBinder() = default;
 
   RC bind_expression(unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions);
@@ -64,11 +70,12 @@ private:
       unique_ptr<Expression> &aggregate_expr, vector<unique_ptr<Expression>> &bound_expressions);
   RC bind_function_expression(
       unique_ptr<Expression> &function_expr, vector<unique_ptr<Expression>> &bound_expressions);
-  RC bind_sub_query_expression(
-      unique_ptr<Expression> &sub_query_expr, vector<unique_ptr<Expression>> &bound_expressions);
-  RC bind_in_sub_query_expression(
-      unique_ptr<Expression> &in_sub_query_expr, vector<unique_ptr<Expression>> &bound_expressions);
+  RC bind_subquery_expression(
+      unique_ptr<Expression> &subquery_expr, vector<unique_ptr<Expression>> &bound_expressions);
+  RC bind_in_subquery_expression(
+      unique_ptr<Expression> &in_expr, vector<unique_ptr<Expression>> &bound_expressions);
 
 private:
   BinderContext &context_;
+  Db            *db_ = nullptr;
 };
