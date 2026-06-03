@@ -53,7 +53,13 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
   }
 
   Value value = update_sql.value;
-  if (field->type() != value.attr_type()) {
+  if (value.is_null()) {
+    if (!field->nullable()) {
+      LOG_WARN("field does not allow null. table=%s, field=%s", table_name, field->name());
+      return RC::INVALID_ARGUMENT;
+    }
+    value.set_type(field->type());
+  } else if (field->type() != value.attr_type()) {
     Value cast_value;
     RC    rc = Value::cast_to(value, field->type(), cast_value);
     if (OB_FAIL(rc)) {

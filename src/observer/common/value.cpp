@@ -36,6 +36,7 @@ Value::Value(const Value &other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -52,9 +53,11 @@ Value::Value(Value &&other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   this->value_     = other.value_;
   other.own_data_  = false;
   other.length_    = 0;
+  other.is_null_   = false;
 }
 
 Value &Value::operator=(const Value &other)
@@ -66,6 +69,7 @@ Value &Value::operator=(const Value &other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -87,9 +91,11 @@ Value &Value::operator=(Value &&other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   this->value_     = other.value_;
   other.own_data_  = false;
   other.length_    = 0;
+  other.is_null_   = false;
   return *this;
 }
 
@@ -108,10 +114,12 @@ void Value::reset()
   attr_type_ = AttrType::UNDEFINED;
   length_    = 0;
   own_data_  = false;
+  is_null_   = false;
 }
 
 void Value::set_data(char *data, int length)
 {
+  is_null_ = false;
   switch (attr_type_) {
     case AttrType::CHARS: {
       set_string(data, length);
@@ -141,6 +149,7 @@ void Value::set_int(int val)
   attr_type_        = AttrType::INTS;
   value_.int_value_ = val;
   length_           = sizeof(val);
+  is_null_          = false;
 }
 
 void Value::set_date(int val)
@@ -149,6 +158,7 @@ void Value::set_date(int val)
   attr_type_        = AttrType::DATES;
   value_.int_value_ = val;
   length_           = sizeof(val);
+  is_null_          = false;
 }
 
 void Value::set_float(float val)
@@ -157,6 +167,7 @@ void Value::set_float(float val)
   attr_type_          = AttrType::FLOATS;
   value_.float_value_ = val;
   length_             = sizeof(val);
+  is_null_            = false;
 }
 void Value::set_boolean(bool val)
 {
@@ -164,12 +175,14 @@ void Value::set_boolean(bool val)
   attr_type_         = AttrType::BOOLEANS;
   value_.bool_value_ = val;
   length_            = sizeof(val);
+  is_null_           = false;
 }
 
 void Value::set_string(const char *s, int len /*= 0*/)
 {
   reset();
   attr_type_ = AttrType::CHARS;
+  is_null_   = false;
   if (s == nullptr) {
     value_.pointer_value_ = nullptr;
     length_               = 0;
@@ -191,6 +204,7 @@ void Value::set_empty_string(int len)
 {
   reset();
   attr_type_ = AttrType::CHARS;
+  is_null_   = false;
 
   own_data_ = true;
   value_.pointer_value_ = new char[len + 1];
@@ -200,8 +214,21 @@ void Value::set_empty_string(int len)
   
 }
 
+void Value::set_null()
+{
+  reset();
+  is_null_ = true;
+}
+
 void Value::set_value(const Value &value)
 {
+  if (value.is_null()) {
+    reset();
+    attr_type_ = value.attr_type_;
+    is_null_   = true;
+    return;
+  }
+
   switch (value.attr_type_) {
     case AttrType::INTS: {
       set_int(value.get_int());
@@ -248,6 +275,9 @@ char *Value::data() const
 
 string Value::to_string() const
 {
+  if (is_null_) {
+    return "NULL";
+  }
   string res;
   RC     rc = DataType::type_instance(this->attr_type_)->to_string(*this, res);
   if (OB_FAIL(rc)) {
@@ -257,10 +287,25 @@ string Value::to_string() const
   return res;
 }
 
-int Value::compare(const Value &other) const { return DataType::type_instance(this->attr_type_)->compare(*this, other); }
+int Value::compare(const Value &other) const
+{
+  if (is_null_ && other.is_null()) {
+    return 0;
+  }
+  if (is_null_) {
+    return -1;
+  }
+  if (other.is_null()) {
+    return 1;
+  }
+  return DataType::type_instance(this->attr_type_)->compare(*this, other);
+}
 
 int Value::get_int() const
 {
+  if (is_null_) {
+    return 0;
+  }
   switch (attr_type_) {
     case AttrType::CHARS: {
       try {
@@ -290,6 +335,9 @@ int Value::get_int() const
 
 float Value::get_float() const
 {
+  if (is_null_) {
+    return 0;
+  }
   switch (attr_type_) {
     case AttrType::CHARS: {
       try {
@@ -326,6 +374,9 @@ string_t Value::get_string_t() const
 
 bool Value::get_boolean() const
 {
+  if (is_null_) {
+    return false;
+  }
   switch (attr_type_) {
     case AttrType::CHARS: {
       try {

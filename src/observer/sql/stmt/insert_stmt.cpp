@@ -47,6 +47,24 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
     return RC::SCHEMA_FIELD_MISSING;
   }
 
+  const int normal_field_start_index = table_meta.sys_field_num();
+  for (int i = 0; i < value_num; i++) {
+    const FieldMeta *field = table_meta.field(i + normal_field_start_index);
+    if (field == nullptr) {
+      LOG_WARN("invalid field meta. table=%s, index=%d", table_name, i);
+      return RC::INTERNAL;
+    }
+
+    const Value &value = values[i];
+    if (value.is_null()) {
+      if (!field->nullable()) {
+        LOG_WARN("field does not allow null. table=%s, field=%s", table_name, field->name());
+        return RC::INVALID_ARGUMENT;
+      }
+      continue;
+    }
+  }
+
   // everything alright
   stmt = new InsertStmt(table, values, value_num);
   return RC::SUCCESS;
