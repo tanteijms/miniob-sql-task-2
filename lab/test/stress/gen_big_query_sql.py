@@ -33,6 +33,9 @@ lines.append("SELECT k, count(*), sum(v) FROM bq_main GROUP BY k;")
 lines.append("SELECT k, avg(v) FROM bq_main GROUP BY k HAVING count(*) > 30;")
 lines.append("SELECT id FROM bq_main WHERE k IN (SELECT k FROM bq_dim WHERE label > 500) ORDER BY id;")
 lines.append("SELECT count(*) FROM bq_main, bq_dim WHERE bq_main.k = bq_dim.k;")
+lines.append("SELECT count(*) FROM bq_main WHERE id=99999;")
+lines.append("SELECT count(*) FROM bq_main, bq_dim WHERE bq_main.k = bq_dim.k AND bq_dim.label = 700;")
+lines.append("SELECT id FROM bq_main WHERE k = 3 ORDER BY id;")
 
 for _ in range(15):
     rid = random.randint(1, ROWS_MAIN)
