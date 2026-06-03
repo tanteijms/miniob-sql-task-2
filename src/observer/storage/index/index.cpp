@@ -29,11 +29,19 @@ RC Index::init(const IndexMeta &index_meta, const vector<FieldMeta> &field_metas
   return RC::SUCCESS;
 }
 
-void Index::make_key(const char *record, char *key) const
+RC Index::make_key(const char *record, char *key) const
 {
   int offset = 0;
   for (const FieldMeta &field_meta : field_metas_) {
+    if (field_meta.field_id() >= 0) {
+      const int byte_index = field_meta.field_id() / 8;
+      const int bit_index  = field_meta.field_id() % 8;
+      if ((record[byte_index] & (1 << bit_index)) != 0) {
+        return RC::RECORD_INVALID_KEY;
+      }
+    }
     memcpy(key + offset, record + field_meta.offset(), field_meta.len());
     offset += field_meta.len();
   }
+  return RC::SUCCESS;
 }

@@ -41,8 +41,13 @@ TableMeta::TableMeta(const TableMeta &other)
 void TableMeta::swap(TableMeta &other) noexcept
 {
   name_.swap(other.name_);
+  trx_fields_.swap(other.trx_fields_);
   fields_.swap(other.fields_);
   indexes_.swap(other.indexes_);
+  primary_keys_.swap(other.primary_keys_);
+  std::swap(table_id_, other.table_id_);
+  std::swap(storage_format_, other.storage_format_);
+  std::swap(storage_engine_, other.storage_engine_);
   std::swap(record_size_, other.record_size_);
 }
 
@@ -71,7 +76,8 @@ RC TableMeta::init(int32_t table_id, const char *name, const vector<FieldMeta> *
     fields_.resize(attributes.size() + trx_fields->size());
     for (size_t i = 0; i < trx_fields->size(); i++) {
       const FieldMeta &field_meta = (*trx_fields)[i];
-      fields_[i] = FieldMeta(field_meta.name(), field_meta.type(), field_offset, field_meta.len(), false /*visible*/, field_meta.field_id());
+      fields_[i] = FieldMeta(
+          field_meta.name(), field_meta.type(), field_offset, field_meta.len(), false /*visible*/, field_meta.field_id(), field_meta.nullable());
       field_offset += field_meta.len();
     }
 
@@ -80,11 +86,14 @@ RC TableMeta::init(int32_t table_id, const char *name, const vector<FieldMeta> *
     fields_.resize(attributes.size());
   }
 
+  const int null_bitmap_len = static_cast<int>((attributes.size() + 7) / 8);
+  field_offset += null_bitmap_len;
+
   for (size_t i = 0; i < attributes.size(); i++) {
     const AttrInfoSqlNode &attr_info = attributes[i];
     // `i` is the col_id of fields[i]
     rc = fields_[i + trx_field_num].init(
-      attr_info.name.c_str(), attr_info.type, field_offset, attr_info.length, true /*visible*/, i);
+      attr_info.name.c_str(), attr_info.type, field_offset, attr_info.length, true /*visible*/, i, attr_info.nullable);
     if (OB_FAIL(rc)) {
       LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name, attr_info.name.c_str());
       return rc;
@@ -171,6 +180,24 @@ const IndexMeta *TableMeta::index(int i) const { return &indexes_[i]; }
 int TableMeta::index_num() const { return indexes_.size(); }
 
 int TableMeta::record_size() const { return record_size_; }
+
+int TableMeta::null_bitmap_len() const { return (user_field_num() + 7) / 8; }
+
+int TableMeta::null_bitmap_offset() const
+{
+  if (sys_field_num() == 0) {
+    return 0;
+  }
+  const FieldMeta &last_sys_field = fields_[sys_field_num() - 1];
+  return last_sys_field.offset() + last_sys_field.len();
+}
+
+int TableMeta::user_field_num() const { return field_num() - sys_field_num(); }
+
+int TableMeta::user_field_index(const FieldMeta &field) const
+{
+  return field.field_id();
+}
 
 int TableMeta::serialize(ostream &ss) const
 {

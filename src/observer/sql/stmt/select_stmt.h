@@ -41,6 +41,7 @@ public:
 public:
   const vector<Table *> &tables() const { return tables_; }
   FilterStmt            *filter_stmt() const { return filter_stmt_; }
+  unique_ptr<Expression> &where_expression() { return where_expression_; }
 
   vector<unique_ptr<Expression>> &query_expressions() { return query_expressions_; }
   vector<unique_ptr<Expression>> &group_by() { return group_by_; }
@@ -53,6 +54,7 @@ private:
   vector<unique_ptr<Expression>>                  query_expressions_;
   vector<Table *>                                   tables_;
   FilterStmt                                       *filter_stmt_ = nullptr;
+  unique_ptr<Expression>                            where_expression_;
   vector<unique_ptr<Expression>>                    group_by_;
   vector<vector<unique_ptr<Expression>>>            join_predicates_;
   vector<unique_ptr<Expression>>                    order_by_;

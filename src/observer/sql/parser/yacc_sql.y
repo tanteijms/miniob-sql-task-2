@@ -124,6 +124,7 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
         EXIT
         DOT //QUOTE
         INTO
+        IN
         VALUES
         FROM
         INNER
@@ -169,8 +170,10 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
   AttrInfoSqlNode *                          attr_info;
   Expression *                               expression;
   vector<unique_ptr<Expression>> *           expression_list;
+  vector<unique_ptr<Expression>> *           where_expression_list;
   vector<Value> *                            value_list;
   vector<ConditionSqlNode> *                 condition_list;
+  SubQuerySqlNode *                          sub_query;
   vector<RelAttrSqlNode> *                   rel_attr_list;
   vector<string> *                           relation_list;
   FromSqlNode *                              from_sql;
@@ -187,8 +190,10 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %destructor { delete $$; } <attr_infos>
 %destructor { delete $$; } <expression>
 %destructor { delete $$; } <expression_list>
+%destructor { delete $$; } <where_expression_list>
 %destructor { delete $$; } <value_list>
 %destructor { delete $$; } <condition_list>
+%destructor { delete $$; } <sub_query>
 // %destructor { delete $$; } <rel_attr_list>
 %destructor { delete $$; } <relation_list>
 %destructor { delete $$; } <from_sql>
@@ -213,6 +218,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <attr_info>           attr_def
 %type <value_list>          value_list
 %type <condition_list>      where
+%type <where_expression_list> select_where
+%type <where_expression_list> where_condition_list
 %type <condition_list>      condition_list
 %type <cstring>             storage_format
 %type <key_list>            primary_key
@@ -222,6 +229,8 @@ UnboundFunctionExpr *create_function_expression(UnboundFunctionExpr::FuncType fu
 %type <expression>          expression
 %type <expression>          aggregate_expression
 %type <expression>          function_expression
+%type <sub_query>           sub_query
+%type <expression>          where_condition
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <expression_list>     having
@@ -576,7 +585,7 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT expression_list FROM from_list where group_by having order_by
+    SELECT expression_list FROM from_list select_where group_by having order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -591,7 +600,7 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       if ($5 != nullptr) {
-        $$->selection.conditions.swap(*$5);
+        $$->selection.where_conditions.swap(*$5);
         delete $5;
       }
 
@@ -675,6 +684,19 @@ expression:
     }
     | function_expression {
       $$ = $1;
+    }
+    | sub_query {
+      $$ = new SubQueryExpr(std::move($1->sql_node));
+      $$->set_name(token_name(sql_string, &@$));
+      delete $1;
+    }
+    ;
+
+sub_query:
+    LBRACE select_stmt RBRACE
+    {
+      $$ = new SubQuerySqlNode;
+      $$->sql_node.reset($2);
     }
     ;
 
@@ -763,6 +785,31 @@ where:
       $$ = $2;  
     }
     ;
+select_where:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | WHERE where_condition_list {
+      $$ = $2;
+    }
+    ;
+where_condition_list:
+    where_condition
+    {
+      $$ = new vector<unique_ptr<Expression>>;
+      $$->emplace_back($1);
+    }
+    | where_condition AND where_condition_list
+    {
+      if ($3 != nullptr) {
+        $$ = $3;
+      } else {
+        $$ = new vector<unique_ptr<Expression>>;
+      }
+      $$->emplace($$->begin(), $1);
+    }
+    ;
 condition_list:
     /* empty */
     {
@@ -777,6 +824,36 @@ condition_list:
       $$ = $3;
       $$->emplace_back(*$1);
       delete $1;
+    }
+    ;
+where_condition:
+    expression comp_op expression
+    {
+      $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
+    }
+    | expression IN sub_query
+    {
+      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), make_unique<SubQueryExpr>(std::move($3->sql_node)), false);
+      $$->set_name(token_name(sql_string, &@$));
+      delete $3;
+    }
+    | expression NOT IN sub_query
+    {
+      $$ = new InSubQueryExpr(unique_ptr<Expression>($1), make_unique<SubQueryExpr>(std::move($4->sql_node)), true);
+      $$->set_name(token_name(sql_string, &@$));
+      delete $4;
+    }
+    | expression IS NULL_T
+    {
+      Value null_value;
+      null_value.set_null();
+      $$ = create_comparison_expression(IS_NULL, $1, new ValueExpr(null_value), sql_string, &@$);
+    }
+    | expression IS NOT NULL_T
+    {
+      Value null_value;
+      null_value.set_null();
+      $$ = create_comparison_expression(IS_NOT_NULL, $1, new ValueExpr(null_value), sql_string, &@$);
     }
     ;
 condition:
@@ -916,12 +993,7 @@ having:
     ;
 
 having_condition:
-    expression comp_op value
-    {
-      $$ = create_comparison_expression($2, $1, new ValueExpr(*$3), sql_string, &@$);
-      delete $3;
-    }
-    | expression comp_op expression
+    expression comp_op expression
     {
       $$ = create_comparison_expression($2, $1, $3, sql_string, &@$);
     }

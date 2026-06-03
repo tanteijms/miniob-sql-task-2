@@ -23,13 +23,16 @@ public:
   virtual ~BinderContext() = default;
 
   void add_table(Table *table) { query_tables_.push_back(table); }
+  void set_db(Db *db) { db_ = db; }
 
   Table *find_table(const char *table_name) const;
+  Db    *db() const { return db_; }
 
   const vector<Table *> &query_tables() const { return query_tables_; }
 
 private:
   vector<Table *> query_tables_;
+  Db             *db_ = nullptr;
 };
 
 /**
@@ -61,6 +64,10 @@ private:
       unique_ptr<Expression> &aggregate_expr, vector<unique_ptr<Expression>> &bound_expressions);
   RC bind_function_expression(
       unique_ptr<Expression> &function_expr, vector<unique_ptr<Expression>> &bound_expressions);
+  RC bind_sub_query_expression(
+      unique_ptr<Expression> &sub_query_expr, vector<unique_ptr<Expression>> &bound_expressions);
+  RC bind_in_sub_query_expression(
+      unique_ptr<Expression> &in_sub_query_expr, vector<unique_ptr<Expression>> &bound_expressions);
 
 private:
   BinderContext &context_;

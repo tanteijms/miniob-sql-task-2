@@ -197,6 +197,18 @@ public:
     const FieldMeta *field_meta = field_expr->field().meta();
     cell.reset();
     cell.set_type(field_meta->type());
+    if (field_meta->field_id() >= 0) {
+      const int field_index = field_meta->field_id();
+      const int bitmap_base = table_->table_meta().null_bitmap_offset();
+      const int byte_index  = field_index / 8;
+      const int bit_index   = field_index % 8;
+      if ((this->record_->data()[bitmap_base + byte_index] & (1 << bit_index)) != 0) {
+        cell.set_type(field_meta->type());
+        cell.set_null();
+        cell.set_type(field_meta->type());
+        return RC::SUCCESS;
+      }
+    }
     cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
     return RC::SUCCESS;
   }

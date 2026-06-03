@@ -41,6 +41,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   }
 
   BinderContext binder_context;
+  binder_context.set_db(db);
 
   // collect tables in `from` statement
   vector<Table *>                tables;
@@ -124,6 +125,30 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     }
   }
 
+  unique_ptr<Expression> where_expression;
+  if (!select_sql.where_conditions.empty()) {
+    vector<unique_ptr<Expression>> bound_where;
+    for (unique_ptr<Expression> &expr : select_sql.where_conditions) {
+      vector<unique_ptr<Expression>> bound;
+      RC                             rc = expression_binder.bind_expression(expr, bound);
+      if (OB_FAIL(rc)) {
+        LOG_INFO("bind where expression failed. rc=%s", strrc(rc));
+        return rc;
+      }
+      if (bound.size() != 1) {
+        LOG_WARN("invalid where expression number: %d", bound.size());
+        return RC::INVALID_ARGUMENT;
+      }
+      bound_where.emplace_back(std::move(bound[0]));
+    }
+
+    if (bound_where.size() == 1) {
+      where_expression = std::move(bound_where[0]);
+    } else {
+      where_expression = make_unique<ConjunctionExpr>(ConjunctionExpr::Type::AND, bound_where);
+    }
+  }
+
   Table *default_table = nullptr;
   if (tables.size() == 1) {
     default_table = tables[0];
@@ -160,25 +185,12 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     join_predicates.push_back(std::move(cmp_exprs));
   }
 
-  // create filter statement in `where` statement
-  FilterStmt *filter_stmt = nullptr;
-  RC          rc          = FilterStmt::create(db,
-      default_table,
-      &table_map,
-      select_sql.conditions.data(),
-      static_cast<int>(select_sql.conditions.size()),
-      filter_stmt);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("cannot construct filter stmt");
-    return rc;
-  }
-
   // everything alright
   SelectStmt *select_stmt = new SelectStmt();
 
   select_stmt->tables_.swap(tables);
   select_stmt->query_expressions_.swap(bound_expressions);
-  select_stmt->filter_stmt_ = filter_stmt;
+  select_stmt->where_expression_ = std::move(where_expression);
   select_stmt->group_by_.swap(group_by_expressions);
   select_stmt->join_predicates_.swap(join_predicates);
   select_stmt->order_by_.swap(order_by_expressions);

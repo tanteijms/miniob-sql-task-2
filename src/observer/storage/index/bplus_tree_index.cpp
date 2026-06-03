@@ -96,13 +96,25 @@ RC BplusTreeIndex::close()
 
 RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 {
-  make_key(record, key_buffer_.data());
+  RC rc = make_key(record, key_buffer_.data());
+  if (rc == RC::RECORD_INVALID_KEY) {
+    return RC::SUCCESS;
+  }
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
   return index_handler_.insert_entry(key_buffer_.data(), rid);
 }
 
 RC BplusTreeIndex::delete_entry(const char *record, const RID *rid)
 {
-  make_key(record, key_buffer_.data());
+  RC rc = make_key(record, key_buffer_.data());
+  if (rc == RC::RECORD_INVALID_KEY) {
+    return RC::SUCCESS;
+  }
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
   return index_handler_.delete_entry(key_buffer_.data(), rid);
 }
 

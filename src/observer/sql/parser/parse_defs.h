@@ -52,6 +52,8 @@ enum CompOp
   GREAT_EQUAL,  ///< ">="
   GREAT_THAN,   ///< ">"
   LIKE_OP,      ///< "LIKE"
+  IN_OP,        ///< "IN"
+  NOT_IN_OP,    ///< "NOT IN"
   IS_NULL,      ///< "IS NULL"
   IS_NOT_NULL,  ///< "IS NOT NULL"
   NO_OP
@@ -109,7 +111,7 @@ struct SelectSqlNode
   vector<unique_ptr<Expression>> expressions;  ///< 查询的表达式
   vector<string>                 relations;    ///< 查询的表（与 from.relations 同步）
   vector<vector<ConditionSqlNode>> join_conditions;  ///< 见 FromSqlNode
-  vector<ConditionSqlNode>       conditions;   ///< 查询条件，使用AND串联起来多个条件
+  vector<unique_ptr<Expression>> where_conditions;  ///< where clause (ComparisonExpr list, AND)
   vector<unique_ptr<Expression>> group_by;     ///< group by clause
   vector<unique_ptr<Expression>> having;       ///< having clause (ComparisonExpr list, AND)
   vector<OrderBySqlNode>         order_by;     ///< order by clause
@@ -261,6 +263,11 @@ struct SetVariableSqlNode
 };
 
 class ParsedSqlNode;
+
+struct SubQuerySqlNode
+{
+  unique_ptr<ParsedSqlNode> sql_node;
+};
 
 /**
  * @brief 描述一个explain语句

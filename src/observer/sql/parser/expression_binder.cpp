@@ -15,6 +15,8 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "common/lang/ranges.h"
+#include "sql/stmt/select_stmt.h"
+#include "sql/stmt/stmt.h"
 #include "sql/parser/expression_binder.h"
 #include "sql/expr/expression_iterator.h"
 
@@ -69,6 +71,14 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
     case ExprType::FUNCTION: {
       bound_expressions.emplace_back(std::move(expr));
       return RC::SUCCESS;
+    } break;
+
+    case ExprType::SUB_QUERY: {
+      return bind_sub_query_expression(expr, bound_expressions);
+    } break;
+
+    case ExprType::IN_SUB_QUERY: {
+      return bind_in_sub_query_expression(expr, bound_expressions);
     } break;
 
     case ExprType::FIELD: {
@@ -513,5 +523,93 @@ RC ExpressionBinder::bind_function_expression(
   auto function_expr = make_unique<FunctionExpr>(func_type, std::move(moved_params));
   function_expr->set_name(unbound_function_expr->name());
   bound_expressions.emplace_back(std::move(function_expr));
+  return RC::SUCCESS;
+}
+
+RC ExpressionBinder::bind_sub_query_expression(
+    unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
+{
+  if (nullptr == expr) {
+    return RC::SUCCESS;
+  }
+
+  auto sub_query_expr = static_cast<SubQueryExpr *>(expr.get());
+  if (sub_query_expr->stmt()) {
+    bound_expressions.emplace_back(std::move(expr));
+    return RC::SUCCESS;
+  }
+
+  if (context_.db() == nullptr) {
+    LOG_WARN("db is null while binding sub query");
+    return RC::INTERNAL;
+  }
+
+  if (sub_query_expr->sql_node() == nullptr || sub_query_expr->sql_node()->flag != SCF_SELECT) {
+    LOG_WARN("only select sub query is supported");
+    return RC::UNSUPPORTED;
+  }
+
+  Stmt *stmt = nullptr;
+  RC    rc   = Stmt::create_stmt(context_.db(), *sub_query_expr->sql_node(), stmt);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to create stmt for sub query. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  unique_ptr<Stmt> stmt_holder(stmt);
+  if (stmt_holder->type() != StmtType::SELECT) {
+    LOG_WARN("only select stmt is supported in sub query");
+    return RC::UNSUPPORTED;
+  }
+
+  auto select_stmt = static_cast<SelectStmt *>(stmt_holder.get());
+  if (select_stmt->query_expressions().size() != 1) {
+    LOG_WARN("sub query must output exactly one column");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  Expression *output_expr = select_stmt->query_expressions()[0].get();
+  sub_query_expr->set_stmt(std::move(stmt_holder));
+  sub_query_expr->set_value_meta(output_expr->value_type(), output_expr->value_length());
+  bound_expressions.emplace_back(std::move(expr));
+  return RC::SUCCESS;
+}
+
+RC ExpressionBinder::bind_in_sub_query_expression(
+    unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
+{
+  if (nullptr == expr) {
+    return RC::SUCCESS;
+  }
+
+  auto in_sub_query_expr = static_cast<InSubQueryExpr *>(expr.get());
+  vector<unique_ptr<Expression>> child_bound_expressions;
+
+  RC rc = bind_expression(in_sub_query_expr->left(), child_bound_expressions);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  if (child_bound_expressions.size() != 1) {
+    LOG_WARN("invalid left children number of in sub query expression: %d", child_bound_expressions.size());
+    return RC::INVALID_ARGUMENT;
+  }
+  if (child_bound_expressions[0].get() != in_sub_query_expr->left().get()) {
+    in_sub_query_expr->left().reset(child_bound_expressions[0].release());
+  }
+
+  child_bound_expressions.clear();
+  unique_ptr<Expression> sub_query_holder(in_sub_query_expr->sub_query_expr().release());
+  rc = bind_sub_query_expression(sub_query_holder, child_bound_expressions);
+  if (OB_FAIL(rc)) {
+    in_sub_query_expr->sub_query_expr().reset(static_cast<SubQueryExpr *>(sub_query_holder.release()));
+    return rc;
+  }
+  if (child_bound_expressions.size() != 1 || child_bound_expressions[0]->type() != ExprType::SUB_QUERY) {
+    LOG_WARN("invalid sub query children number of in sub query expression: %d", child_bound_expressions.size());
+    return RC::INVALID_ARGUMENT;
+  }
+  in_sub_query_expr->sub_query_expr().reset(static_cast<SubQueryExpr *>(child_bound_expressions[0].release()));
+
+  bound_expressions.emplace_back(std::move(expr));
   return RC::SUCCESS;
 }

@@ -23,6 +23,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/chunk.h"
 
 class Tuple;
+class Stmt;
 
 /**
  * @defgroup Expression
@@ -49,6 +50,8 @@ enum class ExprType
   ARITHMETIC,   ///< 算术运算
   AGGREGATION,  ///< 聚合运算
   FUNCTION,     ///< 标量函数 length/round/date_format
+  SUB_QUERY,    ///< 标量子查询
+  IN_SUB_QUERY, ///< IN/NOT IN 子查询
 };
 
 /**
@@ -588,4 +591,53 @@ public:
 private:
   FuncType                       func_type_;
   vector<unique_ptr<Expression>> params_;
+};
+
+class SubQueryExpr : public Expression
+{
+public:
+  explicit SubQueryExpr(unique_ptr<ParsedSqlNode> sql_node);
+  virtual ~SubQueryExpr() = default;
+
+  ExprType type() const override { return ExprType::SUB_QUERY; }
+  AttrType value_type() const override { return value_type_; }
+  int      value_length() const override { return value_length_; }
+  RC       get_value(const Tuple &tuple, Value &value) const override;
+  unique_ptr<Expression> copy() const override { return nullptr; }
+
+  unique_ptr<ParsedSqlNode> &sql_node() { return sql_node_; }
+  const unique_ptr<Stmt>    &stmt() const { return stmt_; }
+  void set_stmt(unique_ptr<Stmt> stmt) { stmt_ = std::move(stmt); }
+  void set_value_meta(AttrType value_type, int value_length)
+  {
+    value_type_   = value_type;
+    value_length_ = value_length;
+  }
+
+private:
+  unique_ptr<ParsedSqlNode> sql_node_;
+  unique_ptr<Stmt>          stmt_;
+  AttrType                  value_type_   = AttrType::UNDEFINED;
+  int                       value_length_ = -1;
+};
+
+class InSubQueryExpr : public Expression
+{
+public:
+  InSubQueryExpr(unique_ptr<Expression> left, unique_ptr<SubQueryExpr> sub_query_expr, bool not_in);
+  virtual ~InSubQueryExpr() = default;
+
+  ExprType type() const override { return ExprType::IN_SUB_QUERY; }
+  AttrType value_type() const override { return AttrType::BOOLEANS; }
+  RC       get_value(const Tuple &tuple, Value &value) const override;
+  unique_ptr<Expression> copy() const override { return nullptr; }
+
+  unique_ptr<Expression>  &left() { return left_; }
+  unique_ptr<SubQueryExpr> &sub_query_expr() { return sub_query_expr_; }
+  bool                     not_in() const { return not_in_; }
+
+private:
+  unique_ptr<Expression>   left_;
+  unique_ptr<SubQueryExpr> sub_query_expr_;
+  bool                     not_in_ = false;
 };

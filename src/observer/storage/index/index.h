@@ -103,7 +103,7 @@ public:
 
 protected:
   RC init(const IndexMeta &index_meta, const vector<FieldMeta> &field_metas);
-  void make_key(const char *record, char *key) const;
+  RC   make_key(const char *record, char *key) const;
 
 protected:
   IndexMeta           index_meta_;  ///< 索引的元数据

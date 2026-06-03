@@ -36,6 +36,10 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/heap_table_engine.h"
 #include "storage/table/lsm_table_engine.h"
 
+namespace {
+constexpr int bits_per_byte = 8;
+}
+
 Table::~Table()
 {
   if (lob_handler_ != nullptr) {
@@ -268,7 +272,9 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &    value = values[i];
-    if (field->type() != value.attr_type()) {
+    if (value.is_null()) {
+      rc = set_value_to_record(record_data, value, field);
+    } else if (field->type() != value.attr_type()) {
       Value real_value;
       rc = Value::cast_to(value, field->type(), real_value);
       if (OB_FAIL(rc)) {
@@ -298,6 +304,16 @@ RC Table::set_record_value(Record &record, const Value &value, const FieldMeta *
 
 RC Table::set_value_to_record(char *record_data, const Value &value, const FieldMeta *field)
 {
+  if (value.is_null()) {
+    if (!field->nullable()) {
+      return RC::INVALID_ARGUMENT;
+    }
+    set_field_null(record_data, field, true);
+    memset(record_data + field->offset(), 0, field->len());
+    return RC::SUCCESS;
+  }
+
+  set_field_null(record_data, field, false);
   size_t       copy_len = field->len();
   const size_t data_len = value.length();
   if (field->type() == AttrType::CHARS) {
@@ -307,6 +323,36 @@ RC Table::set_value_to_record(char *record_data, const Value &value, const Field
   }
   memcpy(record_data + field->offset(), value.data(), copy_len);
   return RC::SUCCESS;
+}
+
+bool Table::field_is_null(const char *record_data, const FieldMeta *field) const
+{
+  if (field == nullptr || field->field_id() < 0) {
+    return false;
+  }
+
+  const int field_index = table_meta_.user_field_index(*field);
+  const int bitmap_base = table_meta_.null_bitmap_offset();
+  const int byte_index  = field_index / bits_per_byte;
+  const int bit_index   = field_index % bits_per_byte;
+  return (record_data[bitmap_base + byte_index] & (1 << bit_index)) != 0;
+}
+
+void Table::set_field_null(char *record_data, const FieldMeta *field, bool is_null) const
+{
+  if (field == nullptr || field->field_id() < 0) {
+    return;
+  }
+
+  const int field_index = table_meta_.user_field_index(*field);
+  const int bitmap_base = table_meta_.null_bitmap_offset();
+  const int byte_index  = field_index / bits_per_byte;
+  const int bit_index   = field_index % bits_per_byte;
+  if (is_null) {
+    record_data[bitmap_base + byte_index] |= (1 << bit_index);
+  } else {
+    record_data[bitmap_base + byte_index] &= ~(1 << bit_index);
+  }
 }
 
 RC Table::get_record_scanner(RecordScanner *&scanner, Trx *trx, ReadWriteMode mode)

@@ -133,6 +133,8 @@ public:
 
 private:
   RC set_value_to_record(char *record_data, const Value &value, const FieldMeta *field);
+  bool field_is_null(const char *record_data, const FieldMeta *field) const;
+  void set_field_null(char *record_data, const FieldMeta *field, bool is_null) const;
 
 private:
   // RC init_record_handler(const char *base_dir);
