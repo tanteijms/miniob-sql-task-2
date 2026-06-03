@@ -1,0 +1,1892 @@
+{
+  "started_at": "2026-06-03T16:33:59+08:00",
+  "finished_at": "2026-06-03T16:35:50+08:00",
+  "repo": "/Users/yishuoyan/projects/bupt/25-26-2/miniob-sql-task-2",
+  "observer": "/Users/yishuoyan/projects/bupt/25-26-2/miniob-sql-task-2/build_debug/bin/observer",
+  "branch": "1357",
+  "commit": "bf31e7c6e53914788a8a50a8c789b62e5c8d9fd3",
+  "total": 135,
+  "passed": 135,
+  "failed": 0,
+  "skipped": 0,
+  "total_duration_sec": 111.49995017051697,
+  "cases": [
+    {
+      "id": "official-basic",
+      "name": "basic",
+      "category": "official",
+      "feature": "basic",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.48990893363952637,
+      "message": "ok",
+      "details": {
+        "success": 10,
+        "failure": 0,
+        "expected_failure": 0,
+        "commands": 33,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-drop-table",
+      "name": "primary-drop-table",
+      "category": "official",
+      "feature": "drop-table",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.7055461406707764,
+      "message": "ok",
+      "details": {
+        "success": 18,
+        "failure": 6,
+        "expected_failure": 6,
+        "commands": 28,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-update",
+      "name": "primary-update",
+      "category": "official",
+      "feature": "update",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.41943812370300293,
+      "message": "ok",
+      "details": {
+        "success": 11,
+        "failure": 4,
+        "expected_failure": 4,
+        "commands": 21,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-date",
+      "name": "primary-date",
+      "category": "official",
+      "feature": "date",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4228630065917969,
+      "message": "ok",
+      "details": {
+        "success": 12,
+        "failure": 4,
+        "expected_failure": 4,
+        "commands": 24,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-aggregation",
+      "name": "primary-aggregation-func",
+      "category": "official",
+      "feature": "aggregation-func",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.3996999263763428,
+      "message": "ok",
+      "details": {
+        "success": 5,
+        "failure": 7,
+        "expected_failure": 7,
+        "commands": 31,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-join",
+      "name": "primary-join-tables",
+      "category": "official",
+      "feature": "join-tables",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 13.849986791610718,
+      "message": "ok",
+      "details": {
+        "success": 618,
+        "failure": 0,
+        "expected_failure": 0,
+        "commands": 631,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-order-by",
+      "name": "primary-order-by",
+      "category": "official",
+      "feature": "order-by",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.48018503189086914,
+      "message": "ok",
+      "details": {
+        "success": 15,
+        "failure": 0,
+        "expected_failure": 0,
+        "commands": 25,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-group-by",
+      "name": "primary-group-by",
+      "category": "official",
+      "feature": "group-by",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.42316508293151855,
+      "message": "ok",
+      "details": {
+        "success": 15,
+        "failure": 0,
+        "expected_failure": 0,
+        "commands": 21,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-multi-index",
+      "name": "primary-multi-index",
+      "category": "official",
+      "feature": "multi-index",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.9411909580230713,
+      "message": "ok",
+      "details": {
+        "success": 40,
+        "failure": 3,
+        "expected_failure": 3,
+        "commands": 56,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-expression",
+      "name": "primary-expression",
+      "category": "official",
+      "feature": "function",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.41641712188720703,
+      "message": "ok",
+      "details": {
+        "success": 6,
+        "failure": 2,
+        "expected_failure": 2,
+        "commands": 25,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-unique",
+      "name": "primary-unique",
+      "category": "official",
+      "feature": "unique",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4089088439941406,
+      "message": "ok",
+      "details": {
+        "success": 5,
+        "failure": 2,
+        "expected_failure": 2,
+        "commands": 8,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-simple-sub-query",
+      "name": "primary-simple-sub-query",
+      "category": "official",
+      "feature": "simple-sub-query",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.4516019821166992,
+      "message": "ok",
+      "details": {
+        "success": 9,
+        "failure": 4,
+        "expected_failure": 4,
+        "commands": 32,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-complex-sub-query",
+      "name": "primary-complex-sub-query",
+      "category": "official",
+      "feature": "complex-sub-query",
+      "points": 5,
+      "passed": true,
+      "duration_sec": 0.46247005462646484,
+      "message": "ok",
+      "details": {
+        "success": 13,
+        "failure": 4,
+        "expected_failure": 4,
+        "commands": 35,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "official-null",
+      "name": "primary-null",
+      "category": "official",
+      "feature": "null",
+      "points": 3,
+      "passed": true,
+      "duration_sec": 0.47083592414855957,
+      "message": "ok",
+      "details": {
+        "success": 12,
+        "failure": 2,
+        "expected_failure": 2,
+        "commands": 64,
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "custom-basic",
+      "name": "basic.sql",
+      "category": "custom",
+      "feature": "basic",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.3915238380432129,
+      "message": "ok",
+      "details": {
+        "success": 2,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-drop-table",
+      "name": "drop-table.sql",
+      "category": "custom",
+      "feature": "drop-table",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4487118721008301,
+      "message": "ok",
+      "details": {
+        "success": 5,
+        "failure": 1,
+        "expected_failure": 1,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-update",
+      "name": "update.sql",
+      "category": "custom",
+      "feature": "update",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.41948580741882324,
+      "message": "ok",
+      "details": {
+        "success": 6,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-update-index",
+      "name": "update-index.sql",
+      "category": "custom",
+      "feature": "update",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4033629894256592,
+      "message": "ok",
+      "details": {
+        "success": 6,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-date",
+      "name": "date.sql",
+      "category": "custom",
+      "feature": "date",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4090921878814697,
+      "message": "ok",
+      "details": {
+        "success": 7,
+        "failure": 2,
+        "expected_failure": 2,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-date-delete",
+      "name": "date-delete.sql",
+      "category": "custom",
+      "feature": "date",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.3942573070526123,
+      "message": "ok",
+      "details": {
+        "success": 4,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-aggregation",
+      "name": "aggregation.sql",
+      "category": "custom",
+      "feature": "aggregation-func",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.39344096183776855,
+      "message": "ok",
+      "details": {
+        "success": 5,
+        "failure": 2,
+        "expected_failure": 2,
+        "assertions": 2
+      }
+    },
+    {
+      "id": "custom-like",
+      "name": "like.sql",
+      "category": "custom",
+      "feature": "like",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.3974571228027344,
+      "message": "ok",
+      "details": {
+        "success": 5,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-join",
+      "name": "join.sql",
+      "category": "custom",
+      "feature": "join-tables",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.46347999572753906,
+      "message": "ok",
+      "details": {
+        "success": 11,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-function",
+      "name": "function.sql",
+      "category": "custom",
+      "feature": "function",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.37978291511535645,
+      "message": "ok",
+      "details": {
+        "success": 3,
+        "failure": 2,
+        "expected_failure": 2,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-order-by",
+      "name": "order-by.sql",
+      "category": "custom",
+      "feature": "order-by",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4102790355682373,
+      "message": "ok",
+      "details": {
+        "success": 15,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-group-by",
+      "name": "group-by.sql",
+      "category": "custom",
+      "feature": "group-by",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.42131900787353516,
+      "message": "ok",
+      "details": {
+        "success": 15,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 2
+      }
+    },
+    {
+      "id": "custom-multi-index",
+      "name": "multi-index.sql",
+      "category": "custom",
+      "feature": "multi-index",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.9822940826416016,
+      "message": "ok",
+      "details": {
+        "success": 26,
+        "failure": 1,
+        "expected_failure": 1,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-unique",
+      "name": "unique.sql",
+      "category": "custom",
+      "feature": "unique",
+      "points": 2,
+      "passed": true,
+      "duration_sec": 0.4103991985321045,
+      "message": "ok",
+      "details": {
+        "success": 5,
+        "failure": 2,
+        "expected_failure": 2,
+        "assertions": 1
+      }
+    },
+    {
+      "id": "custom-simple-sub-query",
+      "name": "simple-sub-query.sql",
+      "category": "custom",
+      "feature": "simple-sub-query",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.40932774543762207,
+      "message": "ok",
+      "details": {
+        "success": 7,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-complex-sub-query",
+      "name": "complex-sub-query.sql",
+      "category": "custom",
+      "feature": "complex-sub-query",
+      "points": 5,
+      "passed": true,
+      "duration_sec": 0.45923924446105957,
+      "message": "ok",
+      "details": {
+        "success": 12,
+        "failure": 0,
+        "expected_failure": 0,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-null",
+      "name": "null.sql",
+      "category": "custom",
+      "feature": "null",
+      "points": 3,
+      "passed": true,
+      "duration_sec": 0.39276123046875,
+      "message": "ok",
+      "details": {
+        "success": 4,
+        "failure": 1,
+        "expected_failure": 1,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "custom-update-select",
+      "name": "update-select.sql",
+      "category": "custom",
+      "feature": "update-select",
+      "points": 4,
+      "passed": true,
+      "duration_sec": 0.46875500679016113,
+      "message": "ok",
+      "details": {
+        "success": 14,
+        "failure": 2,
+        "expected_failure": 2,
+        "assertions": 0
+      }
+    },
+    {
+      "id": "comp-001",
+      "name": "create insert select",
+      "category": "comprehensive",
+      "feature": "basic",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7436528205871582,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT * FROM t1;"
+      }
+    },
+    {
+      "id": "comp-002",
+      "name": "filter eq",
+      "category": "comprehensive",
+      "feature": "basic",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8068251609802246,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM t1 WHERE v=20;"
+      }
+    },
+    {
+      "id": "comp-003",
+      "name": "delete",
+      "category": "comprehensive",
+      "feature": "basic",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7613458633422852,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM t1;"
+      }
+    },
+    {
+      "id": "comp-004",
+      "name": "arithmetic expr",
+      "category": "comprehensive",
+      "feature": "basic",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7482118606567383,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id, v+1 FROM t1 WHERE v+1=21;"
+      }
+    },
+    {
+      "id": "comp-006",
+      "name": "drop then recreate",
+      "category": "comprehensive",
+      "feature": "drop-table",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7964200973510742,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM dt;"
+      }
+    },
+    {
+      "id": "comp-008",
+      "name": "index after recreate",
+      "category": "comprehensive",
+      "feature": "drop-table",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7825908660888672,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM dt WHERE id=2;"
+      }
+    },
+    {
+      "id": "comp-009",
+      "name": "update one row",
+      "category": "comprehensive",
+      "feature": "update",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7586989402770996,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT * FROM ut ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-010",
+      "name": "update all",
+      "category": "comprehensive",
+      "feature": "update",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7892501354217529,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT sum(v) FROM ut;"
+      }
+    },
+    {
+      "id": "comp-011",
+      "name": "update with index",
+      "category": "comprehensive",
+      "feature": "update",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8312749862670898,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT v FROM ut WHERE id=3;"
+      }
+    },
+    {
+      "id": "comp-012",
+      "name": "update no match",
+      "category": "comprehensive",
+      "feature": "update",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7799258232116699,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM ut;"
+      }
+    },
+    {
+      "id": "comp-014",
+      "name": "update char",
+      "category": "comprehensive",
+      "feature": "update",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.763995885848999,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT name FROM ut;"
+      }
+    },
+    {
+      "id": "comp-015",
+      "name": "update date col",
+      "category": "comprehensive",
+      "feature": "update",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.771230936050415,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT d FROM ut;"
+      }
+    },
+    {
+      "id": "comp-016",
+      "name": "date compare",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.757788896560669,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM dd WHERE d>'2020-06-01';"
+      }
+    },
+    {
+      "id": "comp-017",
+      "name": "date invalid insert",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.39872312545776367,
+      "message": "ok",
+      "details": {
+        "sql": "INSERT INTO dd VALUES (9, '2020-13-40');"
+      }
+    },
+    {
+      "id": "comp-018",
+      "name": "date delete",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7619330883026123,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM dd;"
+      }
+    },
+    {
+      "id": "comp-019",
+      "name": "date_format",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7503547668457031,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT DATE_FORMAT(d, '%Y') FROM dd;"
+      }
+    },
+    {
+      "id": "comp-020",
+      "name": "date order",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7570631504058838,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM dd ORDER BY d;"
+      }
+    },
+    {
+      "id": "comp-021",
+      "name": "date eq",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.767035961151123,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM dd WHERE d='2020-01-01';"
+      }
+    },
+    {
+      "id": "comp-022",
+      "name": "date update",
+      "category": "comprehensive",
+      "feature": "date",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7516210079193115,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT d FROM dd WHERE id=1;"
+      }
+    },
+    {
+      "id": "comp-023",
+      "name": "count star",
+      "category": "comprehensive",
+      "feature": "aggregation",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.754112958908081,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM ag;"
+      }
+    },
+    {
+      "id": "comp-024",
+      "name": "avg",
+      "category": "comprehensive",
+      "feature": "aggregation",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7776329517364502,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT avg(num) FROM ag;"
+      }
+    },
+    {
+      "id": "comp-025",
+      "name": "max min",
+      "category": "comprehensive",
+      "feature": "aggregation",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8187048435211182,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT max(num), min(num) FROM ag;"
+      }
+    },
+    {
+      "id": "comp-026",
+      "name": "count empty",
+      "category": "comprehensive",
+      "feature": "aggregation",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7733337879180908,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM ag;"
+      }
+    },
+    {
+      "id": "comp-031",
+      "name": "like prefix",
+      "category": "comprehensive",
+      "feature": "like",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7546889781951904,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM lk WHERE name LIKE 'ab%';"
+      }
+    },
+    {
+      "id": "comp-032",
+      "name": "like underscore",
+      "category": "comprehensive",
+      "feature": "like",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7508871555328369,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM lk WHERE name LIKE 'a_c';"
+      }
+    },
+    {
+      "id": "comp-033",
+      "name": "like z prefix",
+      "category": "comprehensive",
+      "feature": "like",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7545559406280518,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM lk WHERE name LIKE 'z%';"
+      }
+    },
+    {
+      "id": "comp-035",
+      "name": "like escape %",
+      "category": "comprehensive",
+      "feature": "like",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7528531551361084,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM lk WHERE name LIKE '%b%';"
+      }
+    },
+    {
+      "id": "comp-036",
+      "name": "inner join on",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7914378643035889,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT j1.id, j2.v FROM j1 INNER JOIN j2 ON j1.id=j2.id ORDER BY j1.id;"
+      }
+    },
+    {
+      "id": "comp-037",
+      "name": "join no match",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7866432666778564,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM j1 INNER JOIN j2 ON j1.id=j2.id WHERE j1.id=9;"
+      }
+    },
+    {
+      "id": "comp-038",
+      "name": "comma join",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7794787883758545,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT j1.id FROM j1, j2 WHERE j1.id=j2.id AND j2.v>15;"
+      }
+    },
+    {
+      "id": "comp-039",
+      "name": "three table join",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8648536205291748,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM j1, j2, j3 WHERE j1.id=j2.id AND j2.id=j3.id;"
+      }
+    },
+    {
+      "id": "comp-040",
+      "name": "join filter",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7935078144073486,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT j2.v FROM j1 INNER JOIN j2 ON j1.id=j2.id WHERE j2.v=10;"
+      }
+    },
+    {
+      "id": "comp-042",
+      "name": "join agg",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.777158260345459,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT sum(j2.v) FROM j1 INNER JOIN j2 ON j1.id=j2.id;"
+      }
+    },
+    {
+      "id": "comp-043",
+      "name": "join order",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.771979808807373,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT j2.v FROM j1 INNER JOIN j2 ON j1.id=j2.id ORDER BY j2.v DESC;"
+      }
+    },
+    {
+      "id": "comp-045",
+      "name": "join duplicate key",
+      "category": "comprehensive",
+      "feature": "join",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8003473281860352,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM j1 INNER JOIN j2 ON j1.id=j2.id;"
+      }
+    },
+    {
+      "id": "comp-046",
+      "name": "length",
+      "category": "comprehensive",
+      "feature": "function",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7762799263000488,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT LENGTH(name) FROM fn;"
+      }
+    },
+    {
+      "id": "comp-047",
+      "name": "round",
+      "category": "comprehensive",
+      "feature": "function",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7654428482055664,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT ROUND(score) FROM fn;"
+      }
+    },
+    {
+      "id": "comp-048",
+      "name": "round score filter",
+      "category": "comprehensive",
+      "feature": "function",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7536990642547607,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM fn WHERE ROUND(score)=3;"
+      }
+    },
+    {
+      "id": "comp-050",
+      "name": "date_format fn",
+      "category": "comprehensive",
+      "feature": "function",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7651119232177734,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT DATE_FORMAT(d, '%D,%M,%Y') FROM fn;"
+      }
+    },
+    {
+      "id": "comp-051",
+      "name": "length filter",
+      "category": "comprehensive",
+      "feature": "function",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7881460189819336,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM fn WHERE LENGTH(name)>2;"
+      }
+    },
+    {
+      "id": "comp-052",
+      "name": "invalid func",
+      "category": "comprehensive",
+      "feature": "function",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.3938021659851074,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT NOPE(x) FROM fn;"
+      }
+    },
+    {
+      "id": "comp-053",
+      "name": "order asc",
+      "category": "comprehensive",
+      "feature": "order-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.754831075668335,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM ob ORDER BY v;"
+      }
+    },
+    {
+      "id": "comp-054",
+      "name": "order desc",
+      "category": "comprehensive",
+      "feature": "order-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7666118144989014,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT v FROM ob ORDER BY v DESC;"
+      }
+    },
+    {
+      "id": "comp-055",
+      "name": "multi order",
+      "category": "comprehensive",
+      "feature": "order-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7503890991210938,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id, k FROM ob ORDER BY k DESC, id ASC;"
+      }
+    },
+    {
+      "id": "comp-057",
+      "name": "order char",
+      "category": "comprehensive",
+      "feature": "order-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7511048316955566,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT name FROM ob ORDER BY name;"
+      }
+    },
+    {
+      "id": "comp-058",
+      "name": "order top desc",
+      "category": "comprehensive",
+      "feature": "order-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7880809307098389,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM ob ORDER BY v DESC;"
+      }
+    },
+    {
+      "id": "comp-059",
+      "name": "group count",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7836101055145264,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT k, count(*) FROM gb GROUP BY k ORDER BY k;"
+      }
+    },
+    {
+      "id": "comp-060",
+      "name": "group sum",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7662508487701416,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT k, sum(s) FROM gb GROUP BY k ORDER BY k;"
+      }
+    },
+    {
+      "id": "comp-061",
+      "name": "having",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7766158580780029,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT k, avg(s) FROM gb GROUP BY k HAVING avg(s)>15 ORDER BY k;"
+      }
+    },
+    {
+      "id": "comp-063",
+      "name": "group max",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7626566886901855,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT k, max(s) FROM gb GROUP BY k ORDER BY k;"
+      }
+    },
+    {
+      "id": "comp-064",
+      "name": "group empty",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7560200691223145,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM gb GROUP BY k;"
+      }
+    },
+    {
+      "id": "comp-065",
+      "name": "group by name",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7524240016937256,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT name, count(id) FROM gb GROUP BY name ORDER BY name;"
+      }
+    },
+    {
+      "id": "comp-066",
+      "name": "having count",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7619991302490234,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT name FROM gb GROUP BY name HAVING count(id)>1;"
+      }
+    },
+    {
+      "id": "comp-067",
+      "name": "group avg filter",
+      "category": "comprehensive",
+      "feature": "group-by",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7936151027679443,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT k FROM gb GROUP BY k HAVING sum(s)>25;"
+      }
+    },
+    {
+      "id": "comp-068",
+      "name": "composite index rows",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7719700336456299,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM mi;"
+      }
+    },
+    {
+      "id": "comp-069",
+      "name": "index scan all",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8006160259246826,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM mi;"
+      }
+    },
+    {
+      "id": "comp-070",
+      "name": "index after delete",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7586421966552734,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM mi;"
+      }
+    },
+    {
+      "id": "comp-071",
+      "name": "index after update",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.750593900680542,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT v FROM mi WHERE id=1;"
+      }
+    },
+    {
+      "id": "comp-072",
+      "name": "secondary index lookup",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7955820560455322,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM mi WHERE v=5;"
+      }
+    },
+    {
+      "id": "comp-073",
+      "name": "order by with index",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.859360933303833,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM mi ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-074",
+      "name": "max v with index",
+      "category": "comprehensive",
+      "feature": "multi-index",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8907740116119385,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT max(v) FROM mi;"
+      }
+    },
+    {
+      "id": "comp-075",
+      "name": "unique ok",
+      "category": "comprehensive",
+      "feature": "unique",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8018589019775391,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM uq;"
+      }
+    },
+    {
+      "id": "comp-076",
+      "name": "unique dup fail",
+      "category": "comprehensive",
+      "feature": "unique",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.42086195945739746,
+      "message": "ok",
+      "details": {
+        "sql": "INSERT INTO unique_table VALUES (1, 2, 1);"
+      }
+    },
+    {
+      "id": "comp-077",
+      "name": "unique update dup",
+      "category": "comprehensive",
+      "feature": "unique",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.44115686416625977,
+      "message": "ok",
+      "details": {
+        "sql": "UPDATE uq SET v=20 WHERE id=1;"
+      }
+    },
+    {
+      "id": "comp-078",
+      "name": "unique update ok",
+      "category": "comprehensive",
+      "feature": "unique",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7850010395050049,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT v FROM uq WHERE id=1;"
+      }
+    },
+    {
+      "id": "comp-079",
+      "name": "unique delete reinsert",
+      "category": "comprehensive",
+      "feature": "unique",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8172569274902344,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM uq;"
+      }
+    },
+    {
+      "id": "comp-080",
+      "name": "unique null single",
+      "category": "comprehensive",
+      "feature": "unique",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8598299026489258,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM uq;"
+      }
+    },
+    {
+      "id": "comp-081",
+      "name": "in subquery",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.9305319786071777,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM s1 WHERE id IN (SELECT id FROM s2);"
+      }
+    },
+    {
+      "id": "comp-082",
+      "name": "not in subquery",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7852859497070312,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM s1 WHERE c NOT IN (SELECT c FROM s2) ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-083",
+      "name": "scalar subquery eq int",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7948570251464844,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM s1 WHERE c=(SELECT max(c) FROM s2);"
+      }
+    },
+    {
+      "id": "comp-084",
+      "name": "scalar subquery cmp",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7942650318145752,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM s1 WHERE c > (SELECT min(c) FROM s2);"
+      }
+    },
+    {
+      "id": "comp-085",
+      "name": "empty in",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7898917198181152,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM s1 WHERE id IN (SELECT id FROM s2 WHERE 1=0);"
+      }
+    },
+    {
+      "id": "comp-086",
+      "name": "scalar multi fail",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.41608190536499023,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT * FROM s1 WHERE c=(SELECT c FROM s2);"
+      }
+    },
+    {
+      "id": "comp-087",
+      "name": "select star in fail",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.41313886642456055,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT * FROM s1 WHERE c IN (SELECT * FROM s2);"
+      }
+    },
+    {
+      "id": "comp-088",
+      "name": "agg scalar subquery",
+      "category": "comprehensive",
+      "feature": "simple-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8419921398162842,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM s1 WHERE c >= (SELECT max(c) FROM s2);"
+      }
+    },
+    {
+      "id": "comp-089",
+      "name": "nested in",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8062491416931152,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2 WHERE id IN (SELECT id FROM c3));"
+      }
+    },
+    {
+      "id": "comp-090",
+      "name": "nested scalar",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8293218612670898,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM c1 WHERE id >= (SELECT min(id) FROM c2 WHERE id IN (SELECT id FROM c3));"
+      }
+    },
+    {
+      "id": "comp-091",
+      "name": "correlated scalar",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7867550849914551,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2 WHERE c2.tag > c1.id);"
+      }
+    },
+    {
+      "id": "comp-092",
+      "name": "correlated in",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7859618663787842,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM c1 WHERE id NOT IN (SELECT id FROM c2 WHERE c2.tag <> c1.id);"
+      }
+    },
+    {
+      "id": "comp-093",
+      "name": "double subquery and",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8163650035858154,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2) AND id IN (SELECT id FROM c3);"
+      }
+    },
+    {
+      "id": "comp-094",
+      "name": "empty nested",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8794622421264648,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2 WHERE id IN (SELECT id FROM c3 WHERE 1=0));"
+      }
+    },
+    {
+      "id": "comp-095",
+      "name": "correlated agg",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8224329948425293,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM c1 WHERE id IN (SELECT id FROM c2 WHERE c2.tag >= (SELECT min(tag) FROM c2 WHERE id=c1.id));"
+      }
+    },
+    {
+      "id": "comp-096",
+      "name": "not in correlated",
+      "category": "comprehensive",
+      "feature": "complex-sub-query",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7776920795440674,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM c1 WHERE id NOT IN (SELECT id FROM c2 WHERE c2.tag = c1.id);"
+      }
+    },
+    {
+      "id": "comp-097",
+      "name": "update scalar subquery",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8203818798065186,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT val FROM us ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-098",
+      "name": "update scalar subquery where",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7737071514129639,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT val FROM us WHERE id=2;"
+      }
+    },
+    {
+      "id": "comp-099",
+      "name": "update correlated",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8027639389038086,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT val FROM us ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-100a",
+      "name": "update literal expr",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.771125078201294,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT val FROM us WHERE id=1;"
+      }
+    },
+    {
+      "id": "comp-100b",
+      "name": "update multi row scalar fail",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.4252936840057373,
+      "message": "ok",
+      "details": {
+        "sql": "UPDATE us SET val = (SELECT score FROM ref);"
+      }
+    },
+    {
+      "id": "comp-100c",
+      "name": "update where filter",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.791201114654541,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT val FROM us ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-100d",
+      "name": "update rollback unique",
+      "category": "comprehensive",
+      "feature": "update-select",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7980492115020752,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT val FROM us ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-101",
+      "name": "is null",
+      "category": "comprehensive",
+      "feature": "null",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.751384973526001,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM nt WHERE num IS NULL ORDER BY id;"
+      }
+    },
+    {
+      "id": "comp-102",
+      "name": "is not null",
+      "category": "comprehensive",
+      "feature": "null",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7581069469451904,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM nt WHERE num IS NOT NULL;"
+      }
+    },
+    {
+      "id": "comp-103",
+      "name": "null eq unknown",
+      "category": "comprehensive",
+      "feature": "null",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8136210441589355,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM nt WHERE num = null;"
+      }
+    },
+    {
+      "id": "comp-104",
+      "name": "not null insert fail",
+      "category": "comprehensive",
+      "feature": "null",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.3997209072113037,
+      "message": "ok",
+      "details": {
+        "sql": "INSERT INTO nt VALUES (5, 1, null);"
+      }
+    },
+    {
+      "id": "comp-105",
+      "name": "null id insert fail",
+      "category": "comprehensive",
+      "feature": "null",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.3840830326080322,
+      "message": "ok",
+      "details": {
+        "sql": "INSERT INTO nt VALUES (null, 1, 1.0);"
+      }
+    },
+    {
+      "id": "comp-106",
+      "name": "count num skip null",
+      "category": "comprehensive",
+      "feature": "null",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7899978160858154,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(num) FROM nt;"
+      }
+    },
+    {
+      "id": "comp-107",
+      "name": "join group having",
+      "category": "comprehensive",
+      "feature": "integration",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.8228490352630615,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT j1.k, sum(j2.v) FROM j1 INNER JOIN j2 ON j1.id=j2.id GROUP BY j1.k HAVING sum(j2.v)>10 ORDER BY j1.k;"
+      }
+    },
+    {
+      "id": "comp-108",
+      "name": "subquery null mix",
+      "category": "comprehensive",
+      "feature": "integration",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7813160419464111,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT count(*) FROM nt WHERE num IN (SELECT num FROM nt2 WHERE num IS NOT NULL);"
+      }
+    },
+    {
+      "id": "comp-109",
+      "name": "index order limit rows",
+      "category": "comprehensive",
+      "feature": "integration",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7918331623077393,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM mi WHERE k>0 ORDER BY id DESC;"
+      }
+    },
+    {
+      "id": "comp-110",
+      "name": "date filter after update",
+      "category": "comprehensive",
+      "feature": "integration",
+      "points": 0,
+      "passed": true,
+      "duration_sec": 0.7646658420562744,
+      "message": "ok",
+      "details": {
+        "sql": "SELECT id FROM dd WHERE d > '2020-12-31';"
+      }
+    },
+    {
+      "id": "stress-big-write",
+      "name": "big-write (500 ops)",
+      "category": "stress",
+      "feature": "big-write",
+      "points": 5,
+      "passed": true,
+      "duration_sec": 1.0407397747039795,
+      "message": "count(*)=420",
+      "details": {
+        "count": "420",
+        "expected_rows": 420,
+        "restart_count": "420",
+        "failure": 0,
+        "statements": 790
+      }
+    },
+    {
+      "id": "stress-big-write-2k",
+      "name": "big-write (2000 ops)",
+      "category": "stress",
+      "feature": "big-write",
+      "points": 5,
+      "passed": true,
+      "duration_sec": 3.1683390140533447,
+      "message": "count(*)=1680",
+      "details": {
+        "count": "1680",
+        "expected_rows": 1680,
+        "restart_count": null,
+        "failure": 0,
+        "statements": 3124
+      }
+    },
+    {
+      "id": "stress-big-query",
+      "name": "big-query (800 rows + join/group/subquery)",
+      "category": "stress",
+      "feature": "big-query",
+      "points": 5,
+      "passed": true,
+      "duration_sec": 1.312088966369629,
+      "message": "count(*)=800",
+      "details": {
+        "count": "800",
+        "expected_rows": 800,
+        "restart_count": null,
+        "failure": 0,
+        "statements": 851
+      }
+    }
+  ]
+}
