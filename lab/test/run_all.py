@@ -25,6 +25,7 @@ REPO_ROOT = os.path.abspath(os.path.join(LAB_TEST_DIR, "../.."))
 sys.path.insert(0, LAB_TEST_DIR)
 
 from lib.reporter import CaseResult, TestReport, write_report  # noqa: E402
+from lib.comprehensive import run_comprehensive_suite  # noqa: E402
 from lib.runner import (  # noqa: E402
     MiniOBCliRunner,
     default_db_dir,
@@ -284,6 +285,18 @@ def main() -> int:
             result = run_custom_suite(runner, suite)
         elif cat == "stress":
             result = run_stress_suite(runner, suite)
+        elif cat == "comprehensive":
+            sub_results = run_comprehensive_suite(runner, suite, resolve_path)
+            for result in sub_results:
+                report.add(result)
+            passed_n = sum(1 for r in sub_results if r.passed)
+            print(
+                f"    -> {'PASS' if passed_n == len(sub_results) else 'FAIL'} "
+                f"({sum(r.duration_sec for r in sub_results):.1f}s) "
+                f"{passed_n}/{len(sub_results)} cases",
+                flush=True,
+            )
+            continue
         else:
             result = CaseResult(
                 id=sid,
@@ -296,9 +309,10 @@ def main() -> int:
                 message=f"unknown category: {cat}",
             )
 
-        report.add(result)
-        mark = "PASS" if result.passed else "FAIL"
-        print(f"    -> {mark} ({result.duration_sec:.1f}s) {result.message}")
+        if cat != "comprehensive":
+            report.add(result)
+            mark = "PASS" if result.passed else "FAIL"
+            print(f"    -> {mark} ({result.duration_sec:.1f}s) {result.message}")
 
     report.finished_at = (
         datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")

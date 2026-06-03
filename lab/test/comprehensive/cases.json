@@ -1,0 +1,2138 @@
+{
+  "version": 1,
+  "description": "100 per-case assertion tests for MiniOB feature coverage",
+  "cases": [
+    {
+      "id": "comp-001",
+      "name": "create insert select",
+      "feature": "basic",
+      "setup": [
+        "CREATE TABLE t1(id INT, v INT)",
+        "INSERT INTO t1 VALUES (1, 10)",
+        "INSERT INTO t1 VALUES (2, 20)"
+      ],
+      "sql": "SELECT * FROM t1;",
+      "rows": [
+        [
+          "1",
+          "10"
+        ],
+        [
+          "2",
+          "20"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-002",
+      "name": "filter eq",
+      "feature": "basic",
+      "setup": [
+        "CREATE TABLE t1(id INT, v INT)",
+        "INSERT INTO t1 VALUES (1, 10)",
+        "INSERT INTO t1 VALUES (2, 20)"
+      ],
+      "sql": "SELECT id FROM t1 WHERE v=20;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-003",
+      "name": "delete",
+      "feature": "basic",
+      "setup": [
+        "CREATE TABLE t1(id INT, v INT)",
+        "INSERT INTO t1 VALUES (1, 10)",
+        "INSERT INTO t1 VALUES (2, 20)",
+        "DELETE FROM t1 WHERE id=1"
+      ],
+      "sql": "SELECT count(*) FROM t1;",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-004",
+      "name": "arithmetic expr",
+      "feature": "basic",
+      "setup": [
+        "CREATE TABLE t1(id INT, v INT)",
+        "INSERT INTO t1 VALUES (1, 10)",
+        "INSERT INTO t1 VALUES (2, 20)"
+      ],
+      "sql": "SELECT id, v+1 FROM t1 WHERE v+1=21;",
+      "rows": [
+        [
+          "2",
+          "21"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-006",
+      "name": "drop then recreate",
+      "feature": "drop-table",
+      "setup": [
+        "CREATE TABLE dt(id INT)",
+        "INSERT INTO dt VALUES (1)",
+        "DROP TABLE dt",
+        "CREATE TABLE dt(id INT)",
+        "INSERT INTO dt VALUES (1)",
+        "INSERT INTO dt VALUES (2)"
+      ],
+      "sql": "SELECT count(*) FROM dt;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-008",
+      "name": "index after recreate",
+      "feature": "drop-table",
+      "setup": [
+        "CREATE TABLE dt(id INT)",
+        "CREATE INDEX i_dt ON dt(id)",
+        "INSERT INTO dt VALUES (1)",
+        "INSERT INTO dt VALUES (2)"
+      ],
+      "sql": "SELECT id FROM dt WHERE id=2;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-009",
+      "name": "update one row",
+      "feature": "update",
+      "setup": [
+        "CREATE TABLE ut(id INT, v INT)",
+        "INSERT INTO ut VALUES (1, 1)",
+        "INSERT INTO ut VALUES (2, 2)",
+        "UPDATE ut SET v=100 WHERE id=1"
+      ],
+      "sql": "SELECT * FROM ut ORDER BY id;",
+      "rows": [
+        [
+          "1",
+          "100"
+        ],
+        [
+          "2",
+          "2"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-010",
+      "name": "update all",
+      "feature": "update",
+      "setup": [
+        "CREATE TABLE ut(id INT, v INT)",
+        "INSERT INTO ut VALUES (1, 1)",
+        "INSERT INTO ut VALUES (2, 2)",
+        "UPDATE ut SET v=0"
+      ],
+      "sql": "SELECT sum(v) FROM ut;",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-011",
+      "name": "update with index",
+      "feature": "update",
+      "setup": [
+        "CREATE TABLE ut(id INT, v INT)",
+        "CREATE INDEX i_ut ON ut(id)",
+        "INSERT INTO ut VALUES (1,1)",
+        "INSERT INTO ut VALUES (2,2)",
+        "INSERT INTO ut VALUES (3,3)",
+        "UPDATE ut SET v=30 WHERE id=3"
+      ],
+      "sql": "SELECT v FROM ut WHERE id=3;",
+      "rows": [
+        [
+          "30"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-012",
+      "name": "update no match",
+      "feature": "update",
+      "setup": [
+        "CREATE TABLE ut(id INT, v INT)",
+        "INSERT INTO ut VALUES (1, 1)",
+        "INSERT INTO ut VALUES (2, 2)",
+        "UPDATE ut SET v=9 WHERE id=99"
+      ],
+      "sql": "SELECT count(*) FROM ut;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-014",
+      "name": "update char",
+      "feature": "update",
+      "setup": [
+        "CREATE TABLE ut(id INT, name CHAR(8))",
+        "INSERT INTO ut VALUES (1, 'old')",
+        "UPDATE ut SET name='new' WHERE id=1"
+      ],
+      "sql": "SELECT name FROM ut;",
+      "rows": [
+        [
+          "new"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-015",
+      "name": "update date col",
+      "feature": "update",
+      "setup": [
+        "CREATE TABLE ut(id INT, d DATE)",
+        "INSERT INTO ut VALUES (1, '2021-01-01')",
+        "UPDATE ut SET d='2021-01-02' WHERE id=1"
+      ],
+      "sql": "SELECT d FROM ut;",
+      "rows": [
+        [
+          "2021-1-2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-016",
+      "name": "date compare",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (1, '2020-01-01')",
+        "INSERT INTO dd VALUES (2, '2020-12-31')",
+        "INSERT INTO dd VALUES (3, '2021-06-15')"
+      ],
+      "sql": "SELECT id FROM dd WHERE d>'2020-06-01';",
+      "rows": [
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-017",
+      "name": "date invalid insert",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)"
+      ],
+      "sql": "INSERT INTO dd VALUES (9, '2020-13-40');",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-018",
+      "name": "date delete",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (1, '2020-01-01')",
+        "INSERT INTO dd VALUES (2, '2020-12-31')",
+        "DELETE FROM dd WHERE id=2"
+      ],
+      "sql": "SELECT count(*) FROM dd;",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-019",
+      "name": "date_format",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (1, '2020-05-20')"
+      ],
+      "sql": "SELECT DATE_FORMAT(d, '%Y') FROM dd;",
+      "rows": [
+        [
+          "2020"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-020",
+      "name": "date order",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (2, '2020-12-31')",
+        "INSERT INTO dd VALUES (1, '2020-01-01')",
+        "INSERT INTO dd VALUES (3, '2021-01-01')"
+      ],
+      "sql": "SELECT id FROM dd ORDER BY d;",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-021",
+      "name": "date eq",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (1, '2020-01-01')",
+        "INSERT INTO dd VALUES (2, '2021-01-01')"
+      ],
+      "sql": "SELECT count(*) FROM dd WHERE d='2020-01-01';",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-022",
+      "name": "date update",
+      "feature": "date",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (1, '2020-01-01')",
+        "UPDATE dd SET d='2022-02-02' WHERE id=1"
+      ],
+      "sql": "SELECT d FROM dd WHERE id=1;",
+      "rows": [
+        [
+          "2022-2-2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-023",
+      "name": "count star",
+      "feature": "aggregation",
+      "setup": [
+        "CREATE TABLE ag(id INT, num INT)",
+        "INSERT INTO ag VALUES (1,10)",
+        "INSERT INTO ag VALUES (2,20)",
+        "INSERT INTO ag VALUES (3,30)",
+        "INSERT INTO ag VALUES (4,40)"
+      ],
+      "sql": "SELECT count(*) FROM ag;",
+      "rows": [
+        [
+          "4"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-024",
+      "name": "avg",
+      "feature": "aggregation",
+      "setup": [
+        "CREATE TABLE ag(id INT, num INT)",
+        "INSERT INTO ag VALUES (1,10)",
+        "INSERT INTO ag VALUES (2,20)",
+        "INSERT INTO ag VALUES (3,30)",
+        "INSERT INTO ag VALUES (4,40)"
+      ],
+      "sql": "SELECT avg(num) FROM ag;",
+      "rows": [
+        [
+          "25"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-025",
+      "name": "max min",
+      "feature": "aggregation",
+      "setup": [
+        "CREATE TABLE ag(id INT, num INT)",
+        "INSERT INTO ag VALUES (1,10)",
+        "INSERT INTO ag VALUES (2,40)",
+        "INSERT INTO ag VALUES (3,30)"
+      ],
+      "sql": "SELECT max(num), min(num) FROM ag;",
+      "rows": [
+        [
+          "40",
+          "10"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-026",
+      "name": "count empty",
+      "feature": "aggregation",
+      "setup": [
+        "CREATE TABLE ag(id INT, num INT)"
+      ],
+      "sql": "SELECT count(*) FROM ag;",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-031",
+      "name": "like prefix",
+      "feature": "like",
+      "setup": [
+        "CREATE TABLE lk(id INT, name CHAR(10))",
+        "INSERT INTO lk VALUES (1, 'abc')",
+        "INSERT INTO lk VALUES (2, 'abd')",
+        "INSERT INTO lk VALUES (3, 'xx')"
+      ],
+      "sql": "SELECT id FROM lk WHERE name LIKE 'ab%';",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-032",
+      "name": "like underscore",
+      "feature": "like",
+      "setup": [
+        "CREATE TABLE lk(id INT, name CHAR(10))",
+        "INSERT INTO lk VALUES (1, 'abc')",
+        "INSERT INTO lk VALUES (2, 'abd')"
+      ],
+      "sql": "SELECT id FROM lk WHERE name LIKE 'a_c';",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-033",
+      "name": "like z prefix",
+      "feature": "like",
+      "setup": [
+        "CREATE TABLE lk(id INT, name CHAR(10))",
+        "INSERT INTO lk VALUES (1, 'abc')",
+        "INSERT INTO lk VALUES (2, 'zz')"
+      ],
+      "sql": "SELECT count(*) FROM lk WHERE name LIKE 'z%';",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-035",
+      "name": "like escape %",
+      "feature": "like",
+      "setup": [
+        "CREATE TABLE lk(id INT, name CHAR(10))",
+        "INSERT INTO lk VALUES (1, 'abc')",
+        "INSERT INTO lk VALUES (2, 'xbx')"
+      ],
+      "sql": "SELECT id FROM lk WHERE name LIKE '%b%';",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-036",
+      "name": "inner join on",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j1 VALUES (2)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (2,20)",
+        "INSERT INTO j2 VALUES (3,30)"
+      ],
+      "sql": "SELECT j1.id, j2.v FROM j1 INNER JOIN j2 ON j1.id=j2.id ORDER BY j1.id;",
+      "rows": [
+        [
+          "1",
+          "10"
+        ],
+        [
+          "2",
+          "20"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-037",
+      "name": "join no match",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j2 VALUES (2,20)"
+      ],
+      "sql": "SELECT count(*) FROM j1 INNER JOIN j2 ON j1.id=j2.id WHERE j1.id=9;",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-038",
+      "name": "comma join",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j1 VALUES (2)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (2,20)"
+      ],
+      "sql": "SELECT j1.id FROM j1, j2 WHERE j1.id=j2.id AND j2.v>15;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-039",
+      "name": "three table join",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "CREATE TABLE j3(id INT, tag INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j1 VALUES (2)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (2,20)",
+        "INSERT INTO j3 VALUES (1,1)",
+        "INSERT INTO j3 VALUES (2,2)"
+      ],
+      "sql": "SELECT count(*) FROM j1, j2, j3 WHERE j1.id=j2.id AND j2.id=j3.id;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-040",
+      "name": "join filter",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (2,20)"
+      ],
+      "sql": "SELECT j2.v FROM j1 INNER JOIN j2 ON j1.id=j2.id WHERE j2.v=10;",
+      "rows": [
+        [
+          "10"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-042",
+      "name": "join agg",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j1 VALUES (2)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (2,20)"
+      ],
+      "sql": "SELECT sum(j2.v) FROM j1 INNER JOIN j2 ON j1.id=j2.id;",
+      "rows": [
+        [
+          "30"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-043",
+      "name": "join order",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j1 VALUES (2)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (2,20)"
+      ],
+      "sql": "SELECT j2.v FROM j1 INNER JOIN j2 ON j1.id=j2.id ORDER BY j2.v DESC;",
+      "rows": [
+        [
+          "20"
+        ],
+        [
+          "10"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-045",
+      "name": "join duplicate key",
+      "feature": "join",
+      "setup": [
+        "CREATE TABLE j1(id INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1)",
+        "INSERT INTO j2 VALUES (1,10)",
+        "INSERT INTO j2 VALUES (1,11)"
+      ],
+      "sql": "SELECT count(*) FROM j1 INNER JOIN j2 ON j1.id=j2.id;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-046",
+      "name": "length",
+      "feature": "function",
+      "setup": [
+        "CREATE TABLE fn(id INT, name CHAR(10))",
+        "INSERT INTO fn VALUES (1, 'abc')"
+      ],
+      "sql": "SELECT LENGTH(name) FROM fn;",
+      "rows": [
+        [
+          "3"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-047",
+      "name": "round",
+      "feature": "function",
+      "setup": [
+        "CREATE TABLE fn(id INT, score FLOAT)",
+        "INSERT INTO fn VALUES (1, 2.6)"
+      ],
+      "sql": "SELECT ROUND(score) FROM fn;",
+      "rows": [
+        [
+          "3"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-048",
+      "name": "round score filter",
+      "feature": "function",
+      "setup": [
+        "CREATE TABLE fn(id INT, score FLOAT)",
+        "INSERT INTO fn VALUES (1, 2.6)",
+        "INSERT INTO fn VALUES (2, 1.2)"
+      ],
+      "sql": "SELECT id FROM fn WHERE ROUND(score)=3;",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-050",
+      "name": "date_format fn",
+      "feature": "function",
+      "setup": [
+        "CREATE TABLE fn(id INT, d DATE)",
+        "INSERT INTO fn VALUES (1, '2020-06-20')"
+      ],
+      "sql": "SELECT DATE_FORMAT(d, '%D,%M,%Y') FROM fn;",
+      "rows": [
+        [
+          "20th,June,2020"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-051",
+      "name": "length filter",
+      "feature": "function",
+      "setup": [
+        "CREATE TABLE fn(id INT, name CHAR(10))",
+        "INSERT INTO fn VALUES (1, 'ab')",
+        "INSERT INTO fn VALUES (2, 'abcd')"
+      ],
+      "sql": "SELECT id FROM fn WHERE LENGTH(name)>2;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-052",
+      "name": "invalid func",
+      "feature": "function",
+      "setup": [
+        "CREATE TABLE fn(id INT, x INT)",
+        "INSERT INTO fn VALUES (1,1)"
+      ],
+      "sql": "SELECT NOPE(x) FROM fn;",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-053",
+      "name": "order asc",
+      "feature": "order-by",
+      "setup": [
+        "CREATE TABLE ob(id INT, v INT)",
+        "INSERT INTO ob VALUES (2,20)",
+        "INSERT INTO ob VALUES (1,10)",
+        "INSERT INTO ob VALUES (3,30)"
+      ],
+      "sql": "SELECT id FROM ob ORDER BY v;",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-054",
+      "name": "order desc",
+      "feature": "order-by",
+      "setup": [
+        "CREATE TABLE ob(id INT, v INT)",
+        "INSERT INTO ob VALUES (2,20)",
+        "INSERT INTO ob VALUES (1,10)",
+        "INSERT INTO ob VALUES (3,30)"
+      ],
+      "sql": "SELECT v FROM ob ORDER BY v DESC;",
+      "rows": [
+        [
+          "30"
+        ],
+        [
+          "20"
+        ],
+        [
+          "10"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-055",
+      "name": "multi order",
+      "feature": "order-by",
+      "setup": [
+        "CREATE TABLE ob(id INT, v INT, k INT)",
+        "INSERT INTO ob VALUES (1,10,1)",
+        "INSERT INTO ob VALUES (2,20,2)",
+        "INSERT INTO ob VALUES (3,30,2)"
+      ],
+      "sql": "SELECT id, k FROM ob ORDER BY k DESC, id ASC;",
+      "rows": [
+        [
+          "2",
+          "2"
+        ],
+        [
+          "3",
+          "2"
+        ],
+        [
+          "1",
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-057",
+      "name": "order char",
+      "feature": "order-by",
+      "setup": [
+        "CREATE TABLE ob(id INT, name CHAR(4))",
+        "INSERT INTO ob VALUES (1,'cc')",
+        "INSERT INTO ob VALUES (2,'aa')",
+        "INSERT INTO ob VALUES (3,'bb')"
+      ],
+      "sql": "SELECT name FROM ob ORDER BY name;",
+      "rows": [
+        [
+          "aa"
+        ],
+        [
+          "bb"
+        ],
+        [
+          "cc"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-058",
+      "name": "order top desc",
+      "feature": "order-by",
+      "setup": [
+        "CREATE TABLE ob(id INT, v INT)",
+        "INSERT INTO ob VALUES (1,10)",
+        "INSERT INTO ob VALUES (2,20)",
+        "INSERT INTO ob VALUES (3,30)"
+      ],
+      "sql": "SELECT id FROM ob ORDER BY v DESC;",
+      "rows": [
+        [
+          "3"
+        ],
+        [
+          "2"
+        ],
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-059",
+      "name": "group count",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, k INT, s INT)",
+        "INSERT INTO gb VALUES (1,1,10)",
+        "INSERT INTO gb VALUES (2,1,20)",
+        "INSERT INTO gb VALUES (3,2,30)"
+      ],
+      "sql": "SELECT k, count(*) FROM gb GROUP BY k ORDER BY k;",
+      "rows": [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "2",
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-060",
+      "name": "group sum",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, k INT, s INT)",
+        "INSERT INTO gb VALUES (1,1,10)",
+        "INSERT INTO gb VALUES (2,1,20)",
+        "INSERT INTO gb VALUES (3,2,30)"
+      ],
+      "sql": "SELECT k, sum(s) FROM gb GROUP BY k ORDER BY k;",
+      "rows": [
+        [
+          "1",
+          "30"
+        ],
+        [
+          "2",
+          "30"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-061",
+      "name": "having",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, k INT, s INT)",
+        "INSERT INTO gb VALUES (1,1,10)",
+        "INSERT INTO gb VALUES (2,1,20)",
+        "INSERT INTO gb VALUES (3,2,30)"
+      ],
+      "sql": "SELECT k, avg(s) FROM gb GROUP BY k HAVING avg(s)>15 ORDER BY k;",
+      "rows": [
+        [
+          "2",
+          "30"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-063",
+      "name": "group max",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, k INT, s INT)",
+        "INSERT INTO gb VALUES (1,1,10)",
+        "INSERT INTO gb VALUES (2,1,20)",
+        "INSERT INTO gb VALUES (3,2,30)"
+      ],
+      "sql": "SELECT k, max(s) FROM gb GROUP BY k ORDER BY k;",
+      "rows": [
+        [
+          "1",
+          "20"
+        ],
+        [
+          "2",
+          "30"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-064",
+      "name": "group empty",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, k INT, s INT)"
+      ],
+      "sql": "SELECT count(*) FROM gb GROUP BY k;",
+      "rows": [],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-065",
+      "name": "group by name",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, name CHAR(4), s INT)",
+        "INSERT INTO gb VALUES (1,'a',1)",
+        "INSERT INTO gb VALUES (2,'a',2)",
+        "INSERT INTO gb VALUES (3,'b',3)"
+      ],
+      "sql": "SELECT name, count(id) FROM gb GROUP BY name ORDER BY name;",
+      "rows": [
+        [
+          "a",
+          "2"
+        ],
+        [
+          "b",
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-066",
+      "name": "having count",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, name CHAR(4), s INT)",
+        "INSERT INTO gb VALUES (1,'a',1)",
+        "INSERT INTO gb VALUES (2,'a',2)",
+        "INSERT INTO gb VALUES (3,'b',3)"
+      ],
+      "sql": "SELECT name FROM gb GROUP BY name HAVING count(id)>1;",
+      "rows": [
+        [
+          "a"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-067",
+      "name": "group avg filter",
+      "feature": "group-by",
+      "setup": [
+        "CREATE TABLE gb(id INT, k INT, s INT)",
+        "INSERT INTO gb VALUES (1,1,10)",
+        "INSERT INTO gb VALUES (2,1,20)",
+        "INSERT INTO gb VALUES (3,2,30)"
+      ],
+      "sql": "SELECT k FROM gb GROUP BY k HAVING sum(s)>25;",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-068",
+      "name": "composite index rows",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i_mi ON mi(id, k)",
+        "INSERT INTO mi VALUES (1,2,100)",
+        "INSERT INTO mi VALUES (1,3,200)"
+      ],
+      "sql": "SELECT count(*) FROM mi;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-069",
+      "name": "index scan all",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i_mi ON mi(id, k)",
+        "INSERT INTO mi VALUES (1,2,100)",
+        "INSERT INTO mi VALUES (1,3,200)"
+      ],
+      "sql": "SELECT count(*) FROM mi;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-070",
+      "name": "index after delete",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i_mi ON mi(id)",
+        "INSERT INTO mi VALUES (1,2,100)",
+        "INSERT INTO mi VALUES (2,2,200)",
+        "DELETE FROM mi WHERE id=2"
+      ],
+      "sql": "SELECT count(*) FROM mi;",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-071",
+      "name": "index after update",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i_mi ON mi(id)",
+        "INSERT INTO mi VALUES (1,1,10)",
+        "UPDATE mi SET v=99 WHERE id=1"
+      ],
+      "sql": "SELECT v FROM mi WHERE id=1;",
+      "rows": [
+        [
+          "99"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-072",
+      "name": "secondary index lookup",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i1 ON mi(id)",
+        "CREATE INDEX i2 ON mi(v)",
+        "INSERT INTO mi VALUES (1,1,1)",
+        "INSERT INTO mi VALUES (2,2,5)"
+      ],
+      "sql": "SELECT id FROM mi WHERE v=5;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-073",
+      "name": "order by with index",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i_mi ON mi(id, k)",
+        "INSERT INTO mi VALUES (2,2,2)",
+        "INSERT INTO mi VALUES (1,1,1)"
+      ],
+      "sql": "SELECT id FROM mi ORDER BY id;",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-074",
+      "name": "max v with index",
+      "feature": "multi-index",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT, v INT)",
+        "CREATE INDEX i_mi ON mi(id, k)",
+        "INSERT INTO mi VALUES (1,1,1)",
+        "INSERT INTO mi VALUES (2,2,200)"
+      ],
+      "sql": "SELECT max(v) FROM mi;",
+      "rows": [
+        [
+          "200"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-075",
+      "name": "unique ok",
+      "feature": "unique",
+      "setup": [
+        "CREATE TABLE uq(id INT, v INT)",
+        "CREATE UNIQUE INDEX ui ON uq(v)",
+        "INSERT INTO uq VALUES (1,10)",
+        "INSERT INTO uq VALUES (2,20)",
+        "INSERT INTO uq VALUES (3,30)"
+      ],
+      "sql": "SELECT count(*) FROM uq;",
+      "rows": [
+        [
+          "3"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-076",
+      "name": "unique dup fail",
+      "feature": "unique",
+      "setup": [
+        "CREATE TABLE unique_table(id INT, col1 INT, col2 INT)",
+        "INSERT INTO unique_table VALUES (1, 1, 1)",
+        "CREATE UNIQUE INDEX index_id ON unique_table(id)"
+      ],
+      "sql": "INSERT INTO unique_table VALUES (1, 2, 1);",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-077",
+      "name": "unique update dup",
+      "feature": "unique",
+      "setup": [
+        "CREATE TABLE uq(id INT, v INT)",
+        "CREATE UNIQUE INDEX ui ON uq(v)",
+        "INSERT INTO uq VALUES (1,10)",
+        "INSERT INTO uq VALUES (2,20)"
+      ],
+      "sql": "UPDATE uq SET v=20 WHERE id=1;",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-078",
+      "name": "unique update ok",
+      "feature": "unique",
+      "setup": [
+        "CREATE TABLE uq(id INT, v INT)",
+        "CREATE UNIQUE INDEX ui ON uq(v)",
+        "INSERT INTO uq VALUES (1,10)",
+        "INSERT INTO uq VALUES (2,20)",
+        "UPDATE uq SET v=15 WHERE id=1"
+      ],
+      "sql": "SELECT v FROM uq WHERE id=1;",
+      "rows": [
+        [
+          "15"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-079",
+      "name": "unique delete reinsert",
+      "feature": "unique",
+      "setup": [
+        "CREATE TABLE uq(id INT, v INT)",
+        "CREATE UNIQUE INDEX ui ON uq(v)",
+        "INSERT INTO uq VALUES (1,10)",
+        "INSERT INTO uq VALUES (2,20)",
+        "DELETE FROM uq WHERE id=1",
+        "INSERT INTO uq VALUES (3,10)"
+      ],
+      "sql": "SELECT count(*) FROM uq;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-080",
+      "name": "unique null single",
+      "feature": "unique",
+      "setup": [
+        "CREATE TABLE uq(id INT, v INT NULL)",
+        "CREATE UNIQUE INDEX ui ON uq(v)",
+        "INSERT INTO uq VALUES (1,null)"
+      ],
+      "sql": "SELECT count(*) FROM uq;",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-081",
+      "name": "in subquery",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,4)",
+        "INSERT INTO s1 VALUES (2,2)",
+        "INSERT INTO s1 VALUES (3,3)",
+        "INSERT INTO s2 VALUES (1,2)",
+        "INSERT INTO s2 VALUES (2,7)"
+      ],
+      "sql": "SELECT id FROM s1 WHERE id IN (SELECT id FROM s2);",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-082",
+      "name": "not in subquery",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,4)",
+        "INSERT INTO s1 VALUES (2,2)",
+        "INSERT INTO s1 VALUES (3,3)",
+        "INSERT INTO s2 VALUES (1,2)",
+        "INSERT INTO s2 VALUES (2,7)"
+      ],
+      "sql": "SELECT id FROM s1 WHERE c NOT IN (SELECT c FROM s2) ORDER BY id;",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-083",
+      "name": "scalar subquery eq int",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,7)",
+        "INSERT INTO s1 VALUES (2,2)",
+        "INSERT INTO s2 VALUES (1,2)",
+        "INSERT INTO s2 VALUES (2,7)"
+      ],
+      "sql": "SELECT id FROM s1 WHERE c=(SELECT max(c) FROM s2);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-084",
+      "name": "scalar subquery cmp",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,4)",
+        "INSERT INTO s1 VALUES (2,2)",
+        "INSERT INTO s1 VALUES (3,1)",
+        "INSERT INTO s2 VALUES (1,2)",
+        "INSERT INTO s2 VALUES (2,7)"
+      ],
+      "sql": "SELECT count(*) FROM s1 WHERE c > (SELECT min(c) FROM s2);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-085",
+      "name": "empty in",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,1)",
+        "INSERT INTO s2 VALUES (1,1)"
+      ],
+      "sql": "SELECT count(*) FROM s1 WHERE id IN (SELECT id FROM s2 WHERE 1=0);",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-086",
+      "name": "scalar multi fail",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,1)",
+        "INSERT INTO s2 VALUES (1,2)",
+        "INSERT INTO s2 VALUES (2,3)"
+      ],
+      "sql": "SELECT * FROM s1 WHERE c=(SELECT c FROM s2);",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-087",
+      "name": "select star in fail",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, x INT)",
+        "INSERT INTO s1 VALUES (1,1)",
+        "INSERT INTO s2 VALUES (1,2)"
+      ],
+      "sql": "SELECT * FROM s1 WHERE c IN (SELECT * FROM s2);",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-088",
+      "name": "agg scalar subquery",
+      "feature": "simple-sub-query",
+      "setup": [
+        "CREATE TABLE s1(id INT, c INT)",
+        "CREATE TABLE s2(id INT, c INT)",
+        "INSERT INTO s1 VALUES (1,9)",
+        "INSERT INTO s1 VALUES (2,5)",
+        "INSERT INTO s2 VALUES (1,3)",
+        "INSERT INTO s2 VALUES (2,7)"
+      ],
+      "sql": "SELECT id FROM s1 WHERE c >= (SELECT max(c) FROM s2);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-089",
+      "name": "nested in",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT)",
+        "CREATE TABLE c3(id INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1)",
+        "INSERT INTO c2 VALUES (3)",
+        "INSERT INTO c3 VALUES (1)"
+      ],
+      "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2 WHERE id IN (SELECT id FROM c3));",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-090",
+      "name": "nested scalar",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT)",
+        "CREATE TABLE c3(id INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1)",
+        "INSERT INTO c2 VALUES (2)",
+        "INSERT INTO c3 VALUES (2)"
+      ],
+      "sql": "SELECT count(*) FROM c1 WHERE id >= (SELECT min(id) FROM c2 WHERE id IN (SELECT id FROM c3));",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-091",
+      "name": "correlated scalar",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT, tag INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1,5)",
+        "INSERT INTO c2 VALUES (2,1)"
+      ],
+      "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2 WHERE c2.tag > c1.id);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-092",
+      "name": "correlated in",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT, tag INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1,1)",
+        "INSERT INTO c2 VALUES (2,9)"
+      ],
+      "sql": "SELECT id FROM c1 WHERE id NOT IN (SELECT id FROM c2 WHERE c2.tag <> c1.id);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-093",
+      "name": "double subquery and",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT)",
+        "CREATE TABLE c3(id INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1)",
+        "INSERT INTO c2 VALUES (2)",
+        "INSERT INTO c3 VALUES (1)"
+      ],
+      "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2) AND id IN (SELECT id FROM c3);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-094",
+      "name": "empty nested",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT)",
+        "CREATE TABLE c3(id INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c2 VALUES (1)",
+        "INSERT INTO c3 VALUES (1)"
+      ],
+      "sql": "SELECT count(*) FROM c1 WHERE id IN (SELECT id FROM c2 WHERE id IN (SELECT id FROM c3 WHERE 1=0));",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-095",
+      "name": "correlated agg",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT, tag INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1,3)",
+        "INSERT INTO c2 VALUES (1,5)",
+        "INSERT INTO c2 VALUES (2,1)"
+      ],
+      "sql": "SELECT id FROM c1 WHERE id IN (SELECT id FROM c2 WHERE c2.tag >= (SELECT min(tag) FROM c2 WHERE id=c1.id));",
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-096",
+      "name": "not in correlated",
+      "feature": "complex-sub-query",
+      "setup": [
+        "CREATE TABLE c1(id INT)",
+        "CREATE TABLE c2(id INT, tag INT)",
+        "INSERT INTO c1 VALUES (1)",
+        "INSERT INTO c1 VALUES (2)",
+        "INSERT INTO c2 VALUES (1,1)",
+        "INSERT INTO c2 VALUES (2,2)"
+      ],
+      "sql": "SELECT count(*) FROM c1 WHERE id NOT IN (SELECT id FROM c2 WHERE c2.tag = c1.id);",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-097",
+      "name": "update scalar subquery",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "CREATE TABLE ref(id INT, score INT)",
+        "INSERT INTO us VALUES (1, 0)",
+        "INSERT INTO us VALUES (2, 0)",
+        "INSERT INTO ref VALUES (1, 100)",
+        "INSERT INTO ref VALUES (2, 200)",
+        "UPDATE us SET val = (SELECT score FROM ref WHERE ref.id = 1)"
+      ],
+      "sql": "SELECT val FROM us ORDER BY id;",
+      "rows": [
+        [
+          "100"
+        ],
+        [
+          "100"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-098",
+      "name": "update scalar subquery where",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "CREATE TABLE ref(id INT, score INT)",
+        "INSERT INTO us VALUES (1, 0)",
+        "INSERT INTO us VALUES (2, 0)",
+        "INSERT INTO ref VALUES (1, 10)",
+        "INSERT INTO ref VALUES (2, 20)",
+        "UPDATE us SET val=(SELECT score FROM ref WHERE ref.id=2) WHERE id=2"
+      ],
+      "sql": "SELECT val FROM us WHERE id=2;",
+      "rows": [
+        [
+          "20"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-099",
+      "name": "update correlated",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "CREATE TABLE ref(id INT, score INT)",
+        "INSERT INTO us VALUES (1, 0)",
+        "INSERT INTO us VALUES (2, 0)",
+        "INSERT INTO ref VALUES (1, 10)",
+        "INSERT INTO ref VALUES (2, 20)",
+        "UPDATE us SET val = (SELECT score FROM ref WHERE ref.id = us.id)"
+      ],
+      "sql": "SELECT val FROM us ORDER BY id;",
+      "rows": [
+        [
+          "10"
+        ],
+        [
+          "20"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-100a",
+      "name": "update literal expr",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "INSERT INTO us VALUES (1, 1)",
+        "UPDATE us SET val = 99 WHERE id = 1"
+      ],
+      "sql": "SELECT val FROM us WHERE id=1;",
+      "rows": [
+        [
+          "99"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-100b",
+      "name": "update multi row scalar fail",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "CREATE TABLE ref(id INT, score INT)",
+        "INSERT INTO us VALUES (1, 0)",
+        "INSERT INTO ref VALUES (1, 1)",
+        "INSERT INTO ref VALUES (2, 2)"
+      ],
+      "sql": "UPDATE us SET val = (SELECT score FROM ref);",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-100c",
+      "name": "update where filter",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "INSERT INTO us VALUES (1, 0)",
+        "INSERT INTO us VALUES (2, 0)",
+        "UPDATE us SET val = 5 WHERE id = 2"
+      ],
+      "sql": "SELECT val FROM us ORDER BY id;",
+      "rows": [
+        [
+          "0"
+        ],
+        [
+          "5"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-100d",
+      "name": "update rollback unique",
+      "feature": "update-select",
+      "setup": [
+        "CREATE TABLE us(id INT, val INT)",
+        "CREATE UNIQUE INDEX ius ON us(val)",
+        "INSERT INTO us VALUES (1, 10)",
+        "INSERT INTO us VALUES (2, 20)",
+        "INSERT INTO us VALUES (3, 15)",
+        "UPDATE us SET val = (SELECT 20)"
+      ],
+      "sql": "SELECT val FROM us ORDER BY id;",
+      "rows": [
+        [
+          "10"
+        ],
+        [
+          "20"
+        ],
+        [
+          "15"
+        ]
+      ],
+      "sort": true,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-101",
+      "name": "is null",
+      "feature": "null",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL, price FLOAT NOT NULL)",
+        "INSERT INTO nt VALUES (1, 18, 10.0)",
+        "INSERT INTO nt VALUES (2, null, 20.0)",
+        "INSERT INTO nt VALUES (3, 12, 30.0)",
+        "INSERT INTO nt VALUES (4, null, 40.0)"
+      ],
+      "sql": "SELECT id FROM nt WHERE num IS NULL ORDER BY id;",
+      "rows": [
+        [
+          "2"
+        ],
+        [
+          "4"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-102",
+      "name": "is not null",
+      "feature": "null",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL, price FLOAT NOT NULL)",
+        "INSERT INTO nt VALUES (1, 18, 10.0)",
+        "INSERT INTO nt VALUES (2, null, 20.0)",
+        "INSERT INTO nt VALUES (3, 12, 30.0)"
+      ],
+      "sql": "SELECT count(*) FROM nt WHERE num IS NOT NULL;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-103",
+      "name": "null eq unknown",
+      "feature": "null",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL, price FLOAT NOT NULL)",
+        "INSERT INTO nt VALUES (1, 18, 10.0)",
+        "INSERT INTO nt VALUES (2, null, 20.0)"
+      ],
+      "sql": "SELECT count(*) FROM nt WHERE num = null;",
+      "rows": [
+        [
+          "0"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-104",
+      "name": "not null insert fail",
+      "feature": "null",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL, price FLOAT NOT NULL)"
+      ],
+      "sql": "INSERT INTO nt VALUES (5, 1, null);",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-105",
+      "name": "null id insert fail",
+      "feature": "null",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL, price FLOAT NOT NULL)"
+      ],
+      "sql": "INSERT INTO nt VALUES (null, 1, 1.0);",
+      "rows": [],
+      "sort": false,
+      "expect_failure": true,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-106",
+      "name": "count num skip null",
+      "feature": "null",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL, price FLOAT NOT NULL)",
+        "INSERT INTO nt VALUES (1, 1, 1.0)",
+        "INSERT INTO nt VALUES (2, null, 2.0)",
+        "INSERT INTO nt VALUES (3, 3, 3.0)"
+      ],
+      "sql": "SELECT count(num) FROM nt;",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-107",
+      "name": "join group having",
+      "feature": "integration",
+      "setup": [
+        "CREATE TABLE j1(id INT, k INT)",
+        "CREATE TABLE j2(id INT, v INT)",
+        "INSERT INTO j1 VALUES (1,1)",
+        "INSERT INTO j1 VALUES (2,2)",
+        "INSERT INTO j2 VALUES (1,5)",
+        "INSERT INTO j2 VALUES (2,15)",
+        "INSERT INTO j2 VALUES (2,15)"
+      ],
+      "sql": "SELECT j1.k, sum(j2.v) FROM j1 INNER JOIN j2 ON j1.id=j2.id GROUP BY j1.k HAVING sum(j2.v)>10 ORDER BY j1.k;",
+      "rows": [
+        [
+          "2",
+          "30"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-108",
+      "name": "subquery null mix",
+      "feature": "integration",
+      "setup": [
+        "CREATE TABLE nt(id INT NOT NULL, num INT NULL)",
+        "CREATE TABLE nt2(id INT NOT NULL, num INT NULL)",
+        "INSERT INTO nt VALUES (1, 10)",
+        "INSERT INTO nt VALUES (2, null)",
+        "INSERT INTO nt2 VALUES (1, 10)",
+        "INSERT INTO nt2 VALUES (2, null)"
+      ],
+      "sql": "SELECT count(*) FROM nt WHERE num IN (SELECT num FROM nt2 WHERE num IS NOT NULL);",
+      "rows": [
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-109",
+      "name": "index order limit rows",
+      "feature": "integration",
+      "setup": [
+        "CREATE TABLE mi(id INT, k INT)",
+        "CREATE INDEX i_mi ON mi(id, k)",
+        "INSERT INTO mi VALUES (1,1)",
+        "INSERT INTO mi VALUES (2,2)",
+        "INSERT INTO mi VALUES (3,3)"
+      ],
+      "sql": "SELECT id FROM mi WHERE k>0 ORDER BY id DESC;",
+      "rows": [
+        [
+          "3"
+        ],
+        [
+          "2"
+        ],
+        [
+          "1"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    },
+    {
+      "id": "comp-110",
+      "name": "date filter after update",
+      "feature": "integration",
+      "setup": [
+        "CREATE TABLE dd(id INT, d DATE)",
+        "INSERT INTO dd VALUES (1, '2020-01-01')",
+        "INSERT INTO dd VALUES (2, '2021-06-01')",
+        "UPDATE dd SET d='2021-12-01' WHERE id=2"
+      ],
+      "sql": "SELECT id FROM dd WHERE d > '2020-12-31';",
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "sort": false,
+      "expect_failure": false,
+      "setup_expected_failure": 0
+    }
+  ]
+}

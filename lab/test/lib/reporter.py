@@ -74,11 +74,16 @@ def render_markdown(report: TestReport) -> str:
     for c in report.cases:
         by_category.setdefault(c.category, []).append(c)
 
-    for category in ("official", "custom", "stress"):
+    for category in ("official", "custom", "comprehensive", "stress"):
         items = by_category.get(category, [])
         if not items:
             continue
-        title = {"official": "官方用例", "custom": "自定义 SQL", "stress": "压力测试"}.get(
+        title = {
+            "official": "官方用例",
+            "custom": "自定义 SQL",
+            "comprehensive": "综合断言用例 (100)",
+            "stress": "压力测试",
+        }.get(
             category, category
         )
         lines.append(f"## {title}")
