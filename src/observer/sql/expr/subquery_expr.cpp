@@ -120,7 +120,20 @@ SubQueryExpr::~SubQueryExpr() { close(); }
 
 AttrType SubQueryExpr::value_type() const { return value_expr_ ? value_expr_->value_type() : AttrType::UNDEFINED; }
 
-unique_ptr<Expression> SubQueryExpr::copy() const { return nullptr; }
+unique_ptr<Expression> SubQueryExpr::copy() const
+{
+  unique_ptr<Expression> copied_value_expr;
+  if (value_expr_ != nullptr) {
+    copied_value_expr = value_expr_->copy();
+    if (copied_value_expr == nullptr) {
+      return nullptr;
+    }
+  }
+
+  auto copied = make_unique<SubQueryExpr>(unique_ptr<SelectStmt>(), std::move(copied_value_expr));
+  copied->set_correlated(correlated_);
+  return copied;
+}
 
 void SubQueryExpr::set_physical_operator(unique_ptr<PhysicalOperator> oper)
 {
@@ -293,7 +306,24 @@ InSubQueryExpr::InSubQueryExpr(unique_ptr<Expression> left, unique_ptr<Expressio
 
 InSubQueryExpr::~InSubQueryExpr() { close(); }
 
-unique_ptr<Expression> InSubQueryExpr::copy() const { return nullptr; }
+unique_ptr<Expression> InSubQueryExpr::copy() const
+{
+  unique_ptr<Expression> copied_left;
+  unique_ptr<Expression> copied_subquery;
+  if (left_ != nullptr) {
+    copied_left = left_->copy();
+    if (copied_left == nullptr) {
+      return nullptr;
+    }
+  }
+  if (subquery_ != nullptr) {
+    copied_subquery = subquery_->copy();
+    if (copied_subquery == nullptr) {
+      return nullptr;
+    }
+  }
+  return make_unique<InSubQueryExpr>(std::move(copied_left), std::move(copied_subquery), not_in_);
+}
 
 RC InSubQueryExpr::open(Trx *trx)
 {
