@@ -20,6 +20,10 @@ const OBS_HOST      = process.env.OBSERVER_HOST        || "127.0.0.1";
 const OBS_PORT      = Number(process.env.OBSERVER_PORT || 6789);
 const STATIC_DIR    = __dirname;
 const LOG_FILE      = path.join(STATIC_DIR, "session.log");
+const TEST_JSON     = path.resolve(STATIC_DIR, "../test/latest.json");
+const TEST_MD       = path.resolve(STATIC_DIR, "../test/latest.md");
+const TEST_README   = path.resolve(STATIC_DIR, "../test/README.md");
+const SHOWCASE_MD   = path.resolve(STATIC_DIR, "../log/xc/1357新增功能展示说明.md");
 const OBS_AUTO      = process.env.OBSERVER_AUTO_START !== "0";
 const OBS_BIN_ENV   = process.env.OBSERVER_BIN || "";
 const OBS_CFG_ENV   = process.env.OBSERVER_CONFIG || "";
@@ -83,6 +87,108 @@ function normalizeStatements(list) {
     .map((s) => (typeof s === "string" ? { sql: s } : s))
     .map((s) => (s && typeof s.sql === "string" ? { ...s, sql: stripSqlComments(s.sql) } : null))
     .filter((s) => s && s.sql.length > 0);
+}
+
+function readJsonFile(file) {
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function readTextFile(file) {
+  return fs.readFileSync(file, "utf8");
+}
+
+function clipLines(text, maxLines) {
+  return String(text).split("\n").slice(0, maxLines).join("\n").trim();
+}
+
+function extractSection(text, title) {
+  const lines = String(text).split("\n");
+  const start = lines.findIndex((line) => line.trim() === title);
+  if (start < 0) return "";
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^##\s+/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function buildTestReportPayload() {
+  const latest = readJsonFile(TEST_JSON);
+  const latestMd = readTextFile(TEST_MD);
+  const testReadme = readTextFile(TEST_README);
+  const showcase = readTextFile(SHOWCASE_MD);
+
+  const categoryMap = new Map();
+  const featureMap = new Map();
+  for (const item of latest.cases || []) {
+    const category = item.category || "other";
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, { category, total: 0, passed: 0, points: 0, duration: 0 });
+    }
+    const categoryAcc = categoryMap.get(category);
+    categoryAcc.total += 1;
+    categoryAcc.passed += item.passed ? 1 : 0;
+    categoryAcc.points += Number(item.points || 0);
+    categoryAcc.duration += Number(item.duration_sec || 0);
+
+    const feature = item.feature || "unknown";
+    if (!featureMap.has(feature)) {
+      featureMap.set(feature, { feature, total: 0, points: 0, duration: 0, expectedFailure: 0 });
+    }
+    const featureAcc = featureMap.get(feature);
+    featureAcc.total += 1;
+    featureAcc.points += Number(item.points || 0);
+    featureAcc.duration += Number(item.duration_sec || 0);
+    featureAcc.expectedFailure += Number(item.details?.expected_failure || 0);
+  }
+
+  const slowCases = [...(latest.cases || [])]
+    .sort((a, b) => Number(b.duration_sec || 0) - Number(a.duration_sec || 0))
+    .slice(0, 8)
+    .map((item) => ({
+      id: item.id,
+      category: item.category,
+      feature: item.feature,
+      duration_sec: Number(item.duration_sec || 0),
+    }));
+
+  return {
+    summary: {
+      total: latest.total,
+      passed: latest.passed,
+      failed: latest.failed,
+      skipped: latest.skipped,
+      totalDurationSec: Number(latest.total_duration_sec || 0),
+      branch: latest.branch,
+      commitShort: String(latest.commit || "").slice(0, 8),
+      observerName: path.basename(latest.observer || ""),
+      categoryCount: categoryMap.size,
+    },
+    categories: Array.from(categoryMap.values()),
+    features: Array.from(featureMap.values()).sort((a, b) => a.feature.localeCompare(b.feature)),
+    slowCases,
+    snippets: [
+      {
+        title: "最新全量报告摘要",
+        content: clipLines(extractSection(latestMd, "## 汇总"), 16),
+      },
+      {
+        title: "压力测试结果",
+        content: clipLines(extractSection(latestMd, "## 压力测试"), 12),
+      },
+      {
+        title: "测试体系说明",
+        content: clipLines(testReadme, 28),
+      },
+      {
+        title: "新增功能展示说明摘录",
+        content: clipLines(showcase, 40),
+      },
+    ],
+  };
 }
 
 function probeObserver(timeoutMs) {
@@ -388,7 +494,7 @@ const server = http.createServer(async (req, res) => {
     }
     const r = await runOnObserver(stmts);
     writeLog(
-      body.demoId ? `demo: ${body.demoId}` : `ad-hoc (${stmts.length} stmts)`,
+      body.metaLabel ? `${body.metaLabel}` : (body.demoId ? `demo: ${body.demoId}` : `ad-hoc (${stmts.length} stmts)`),
       r.results,
       body.demoId ? null : null,
     );
@@ -417,6 +523,14 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, lines: all.slice(Math.max(0, all.length - n)) });
     });
     return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/test-report") {
+    try {
+      return sendJson(res, 200, { ok: true, ...buildTestReportPayload() });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, error: err.message || String(err) });
+    }
   }
 
   if (req.method === "GET") {

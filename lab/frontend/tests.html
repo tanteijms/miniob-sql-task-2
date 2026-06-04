@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>MiniOB 测试总览 — 北邮数据库课程设计</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="tests-page">
+  <header class="top">
+    <div class="title">
+      <h1>MiniOB 测试总览</h1>
+      <p class="sub">官方用例 + 自定义 SQL + 压力脚本的汇总展示</p>
+    </div>
+    <div class="status">
+      <a class="ghost action-link" href="/">返回演示页</a>
+    </div>
+  </header>
+
+  <main class="tests-shell">
+    <section id="report-summary" class="stats-grid"></section>
+
+    <section class="tests-section">
+      <div class="panel-head">
+        <div>
+          <h2>分类覆盖</h2>
+          <p>按官方 / 自定义 / 压力三层组织，展示当前回归资产覆盖面。</p>
+        </div>
+      </div>
+      <div id="category-bars" class="category-bars"></div>
+    </section>
+
+    <section class="tests-section two-col">
+      <div class="sub-panel">
+        <div class="panel-head">
+          <div>
+            <h2>功能覆盖矩阵</h2>
+            <p>按 feature 汇总已跑过的测试数量、耗时与预期失败条数。</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>功能</th>
+                <th>用例数</th>
+                <th>总分</th>
+                <th>耗时</th>
+                <th>预期失败</th>
+              </tr>
+            </thead>
+            <tbody id="feature-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub-panel">
+        <div class="panel-head">
+          <div>
+            <h2>耗时最高用例</h2>
+            <p>给老师直观看到 join / 压力脚本这类“重场景”也实际跑过。</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>用例</th>
+                <th>分类</th>
+                <th>功能</th>
+                <th>耗时</th>
+              </tr>
+            </thead>
+            <tbody id="slow-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="tests-section">
+      <div class="panel-head">
+        <div>
+          <h2>精选日志与说明</h2>
+          <p>展示全量报告、压力结果和功能说明摘录，便于现场快速讲解。</p>
+        </div>
+      </div>
+      <div id="snippet-grid" class="snippet-grid"></div>
+    </section>
+  </main>
+
+  <script src="tests.js"></script>
+</body>
+</html>
