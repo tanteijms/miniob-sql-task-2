@@ -232,6 +232,8 @@ public:
    */
   bool is_full() const;
 
+  int record_real_size() const { return page_header_ != nullptr ? page_header_->record_real_size : -1; }
+
 protected:
   /**
    * @details

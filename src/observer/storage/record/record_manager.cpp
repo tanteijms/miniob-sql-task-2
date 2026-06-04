@@ -588,6 +588,18 @@ RC RecordFileHandler::insert_record(const char *data, int record_size, RID *rid)
     }
 
     if (!record_page_handler->is_full()) {
+      if (record_page_handler->record_real_size() != record_size) {
+        record_page_handler->cleanup();
+        lock_.unlock();
+        LOG_ERROR(
+            "record size mismatch on existing page. page_num=%d, expected=%d, actual=%d. "
+            "The table data may come from an old incompatible storage layout. "
+            "Please rebuild the table or clear the stale database files.",
+            current_page_num,
+            record_size,
+            record_page_handler->record_real_size());
+        return RC::INTERNAL;
+      }
       page_found = true;
       break;
     }

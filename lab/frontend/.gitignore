@@ -1,0 +1,7 @@
+# observer 跑在 frontend/ 目录时落下的临时产物
+miniob/
+observer.log.*
+# 后端会话日志（每次启动清空，用「📥 导出日志」按钮归档到本地）
+session.log
+node_modules/
+.DS_Store

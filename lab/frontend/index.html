@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>MiniOB 验收展示 — 北邮数据库课程设计</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="title">
+      <h1>MiniOB 验收展示</h1>
+      <p class="sub">北邮 2025-2026 春季 · 数据库系统原理课程设计 · <code>bupt-lab</code></p>
+    </div>
+    <div class="status">
+      <span id="status-dot" class="dot off"></span>
+      <span id="status-text">检查中…</span>
+    </div>
+  </header>
+
+  <section class="actions">
+    <button id="btn-refresh"  class="ghost">刷新状态</button>
+    <button id="btn-clear"    class="ghost">清空输出</button>
+    <button id="btn-reset"    class="ghost">🔄 重置 demo 数据</button>
+    <button id="btn-export"   class="ghost">📥 导出日志</button>
+    <button id="btn-stop"     class="ghost" disabled>停止</button>
+    <span class="hint">点下方任一功能按钮，把对应演示 SQL 打到本地 MiniOB observer。每个 demo 表名独立，可并行点。<b>重跑同一按钮前务必先点「重置」</b>，否则会因为表已存在导致 INSERT 重复入。</span>
+  </section>
+
+  <main id="button-grid" class="grid"></main>
+
+  <section class="console-wrap">
+    <div class="console-head">
+      <h2>输出</h2>
+      <span id="running" class="running hidden">执行中…</span>
+    </div>
+    <pre id="console" class="console" aria-live="polite"></pre>
+  </section>
+
+  <script src="demos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
