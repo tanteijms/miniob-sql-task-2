@@ -10,9 +10,67 @@ const btnClear    = document.getElementById("btn-clear");
 const btnReset    = document.getElementById("btn-reset");
 const btnExport   = document.getElementById("btn-export");
 const btnStop     = document.getElementById("btn-stop");
+const btnSqlRun   = document.getElementById("btn-sql-run");
+const btnSqlClear = document.getElementById("btn-sql-clear");
+const sqlEditor   = document.getElementById("sql-editor");
+const sqlPresets  = document.getElementById("sql-presets");
 
 let currentRun   = null;       // AbortController
 const cardById   = new Map();  // demoId → button element
+
+const LIVE_SQL_PRESETS = [
+  {
+    id: "teacher_basic",
+    title: "基础建表 + 查询",
+    desc: "用最短链路展示建表、插入、查询都可用。",
+    sql: [
+      "CREATE TABLE live_basic(id INT, name CHAR(10));",
+      "INSERT INTO live_basic VALUES (1, 'miniob');",
+      "INSERT INTO live_basic VALUES (2, 'demo');",
+      "SELECT * FROM live_basic;",
+    ].join("\n"),
+  },
+  {
+    id: "teacher_null",
+    title: "NULL 语义",
+    desc: "展示 NULL / IS NULL / 聚合跳过 NULL。",
+    sql: [
+      "CREATE TABLE live_null(id INT NOT NULL, score INT NULL, price FLOAT NOT NULL);",
+      "INSERT INTO live_null VALUES (1, 18, 10.0);",
+      "INSERT INTO live_null VALUES (2, NULL, 20.0);",
+      "SELECT * FROM live_null WHERE score IS NULL;",
+      "SELECT count(score) FROM live_null;",
+    ].join("\n"),
+  },
+  {
+    id: "teacher_unique",
+    title: "UNIQUE 约束",
+    desc: "先成功插入，再演示重复键被拒绝。",
+    sql: [
+      "CREATE TABLE live_uq(id INT, name CHAR(10));",
+      "CREATE UNIQUE INDEX live_uq_id ON live_uq(id);",
+      "INSERT INTO live_uq VALUES (1, 'ok');",
+      "INSERT INTO live_uq VALUES (2, 'ok2');",
+      "INSERT INTO live_uq VALUES (1, 'dup');",
+      "SELECT * FROM live_uq;",
+    ].join("\n"),
+  },
+  {
+    id: "teacher_update_select",
+    title: "UPDATE + 子查询",
+    desc: "演示 SET 右值来自子查询。",
+    sql: [
+      "CREATE TABLE live_us1(id INT, val INT);",
+      "CREATE TABLE live_us2(id INT, score INT);",
+      "INSERT INTO live_us1 VALUES (1, 10);",
+      "INSERT INTO live_us1 VALUES (2, 20);",
+      "INSERT INTO live_us2 VALUES (1, 100);",
+      "INSERT INTO live_us2 VALUES (2, 200);",
+      "UPDATE live_us1 SET val = (SELECT score FROM live_us2 WHERE live_us2.id = live_us1.id);",
+      "SELECT * FROM live_us1;",
+    ].join("\n"),
+  },
+];
 
 function normalizeSql(sql) {
   return String(sql)
@@ -39,6 +97,14 @@ function resolveDemoStatements(demo) {
       };
     })
     .filter(Boolean);
+}
+
+function parseSqlScript(script) {
+  return String(script)
+    .split(";")
+    .map((part) => normalizeSql(part))
+    .filter((sql) => sql.length > 0)
+    .map((sql) => ({ sql: sql.endsWith(";") ? sql : `${sql};` }));
 }
 
 // ---- 状态栏 -------------------------------------------------------------
@@ -171,17 +237,28 @@ function clearConsole() {
 async function runDemo(demo, btn) {
   if (currentRun) return; // 串行：避免并发把 observer 状态搞乱
   const stmts = resolveDemoStatements(demo);
+  await runStatementBatch({
+    title: demo.title,
+    label: demo.id,
+    stmts,
+    btn,
+  });
+}
+
+async function runStatementBatch({ title, label, stmts, btn = null }) {
   if (stmts.length === 0) {
-    appendEvent([{ cls: "err", text: `demo ${demo.id} 没有 SQL` }]);
+    appendEvent([{ cls: "err", text: `${title} 没有可执行的 SQL` }]);
     return;
   }
 
-  btn.classList.add("running");
-  btn.classList.remove("done", "failed");
+  if (btn) {
+    btn.classList.add("running");
+    btn.classList.remove("done", "failed");
+  }
   runningEl.classList.remove("hidden");
   btnStop.disabled = false;
   appendEvent([
-    { cls: "ok",  text: `▶ ${demo.title}  (${stmts.length} 条 SQL)` },
+    { cls: "ok",  text: `▶ ${title}  (${stmts.length} 条 SQL)` },
   ]);
   for (const s of stmts) appendSqlBlock(s.sql);
 
@@ -192,7 +269,7 @@ async function runDemo(demo, btn) {
     resp = await fetch("/api/sql", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ statements: stmts, demoId: demo.id }),
+      body:    JSON.stringify({ statements: stmts, demoId: label, metaLabel: title }),
       signal:  currentRun.signal,
     });
   } catch (e) {
@@ -204,21 +281,27 @@ async function runDemo(demo, btn) {
 
   if (netErr) {
     appendEvent([{ cls: "err", text: `✗ 请求失败：${netErr.message || netErr}` }]);
-    btn.classList.remove("running");
-    btn.classList.add("failed");
+    if (btn) {
+      btn.classList.remove("running");
+      btn.classList.add("failed");
+    }
     return;
   }
   if (!resp.ok) {
     appendEvent([{ cls: "err", text: `✗ HTTP ${resp.status}` }]);
-    btn.classList.remove("running");
-    btn.classList.add("failed");
+    if (btn) {
+      btn.classList.remove("running");
+      btn.classList.add("failed");
+    }
     return;
   }
   const j = await resp.json();
   if (!j.ok) {
     appendEvent([{ cls: "err", text: `✗ 后端错误：${j.error || "unknown"}` }]);
-    btn.classList.remove("running");
-    btn.classList.add("failed");
+    if (btn) {
+      btn.classList.remove("running");
+      btn.classList.add("failed");
+    }
     return;
   }
   let failed = 0;
@@ -236,12 +319,14 @@ async function runDemo(demo, btn) {
     cls: failed === 0 ? "ok" : "err",
     text: failed === 0
       ? (expectedFailed > 0
-          ? `✓ ${demo.title} 成功，含 ${expectedFailed} 条预期失败  (${dt} ms)`
-          : `✓ ${demo.title} 全部成功  (${dt} ms)`)
-      : `✗ ${demo.title} 存在 ${failed} 条非预期失败${expectedFailed > 0 ? `，另有 ${expectedFailed} 条预期失败` : ""}  (${dt} ms)`,
+          ? `✓ ${title} 成功，含 ${expectedFailed} 条预期失败  (${dt} ms)`
+          : `✓ ${title} 全部成功  (${dt} ms)`)
+      : `✗ ${title} 存在 ${failed} 条非预期失败${expectedFailed > 0 ? `，另有 ${expectedFailed} 条预期失败` : ""}  (${dt} ms)`,
   }]);
-  btn.classList.remove("running");
-  btn.classList.add(failed === 0 ? "done" : "failed");
+  if (btn) {
+    btn.classList.remove("running");
+    btn.classList.add(failed === 0 ? "done" : "failed");
+  }
 }
 
 // ---- 顶部按钮 -----------------------------------------------------------
@@ -252,6 +337,8 @@ btnStop   .addEventListener("click", () => {
   if (currentRun) currentRun.abort();
 });
 btnReset  .addEventListener("click", () => resetDemoData());
+btnSqlRun .addEventListener("click", () => runAdHocSql());
+btnSqlClear.addEventListener("click", () => { sqlEditor.value = ""; });
 btnExport .addEventListener("click", () => {
   // 直接走 <a download> 触发浏览器下载
   const a = document.createElement("a");
@@ -303,8 +390,52 @@ async function resetDemoData() {
   }]);
 }
 
+function renderSqlPresets() {
+  sqlPresets.innerHTML = "";
+  for (const preset of LIVE_SQL_PRESETS) {
+    const card = document.createElement("div");
+    card.className = "preset-card";
+    card.innerHTML = `
+      <div class="preset-title">${preset.title}</div>
+      <div class="preset-desc">${preset.desc}</div>
+      <div class="preset-actions">
+        <button class="ghost" data-act="load">加载到输入框</button>
+        <button data-act="run">直接执行</button>
+      </div>
+    `;
+    card.querySelector('[data-act="load"]').addEventListener("click", () => {
+      sqlEditor.value = preset.sql;
+      sqlEditor.focus();
+    });
+    card.querySelector('[data-act="run"]').addEventListener("click", async () => {
+      const stmts = parseSqlScript(preset.sql);
+      await runStatementBatch({
+        title: `现场推荐：${preset.title}`,
+        label: `preset:${preset.id}`,
+        stmts,
+      });
+    });
+    sqlPresets.appendChild(card);
+  }
+}
+
+async function runAdHocSql() {
+  const script = sqlEditor.value;
+  const stmts = parseSqlScript(script);
+  if (stmts.length === 0) {
+    appendEvent([{ cls: "err", text: "✗ 输入框里还没有可执行的 SQL" }]);
+    return;
+  }
+  await runStatementBatch({
+    title: "手写 SQL",
+    label: "ad-hoc-sql",
+    stmts,
+  });
+}
+
 // ---- 启动 ---------------------------------------------------------------
 
 renderButtons();
+renderSqlPresets();
 refreshStatus();
 setInterval(refreshStatus, 8000);

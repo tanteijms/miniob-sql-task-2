@@ -24,10 +24,34 @@
     <button id="btn-reset"    class="ghost">🔄 重置 demo 数据</button>
     <button id="btn-export"   class="ghost">📥 导出日志</button>
     <button id="btn-stop"     class="ghost" disabled>停止</button>
+    <a class="ghost action-link" href="/tests.html">测试总览</a>
     <span class="hint">点下方任一功能按钮，把对应演示 SQL 打到本地 MiniOB observer。每个 demo 表名独立，可并行点。<b>重跑同一按钮前务必先点「重置」</b>，否则会因为表已存在导致 INSERT 重复入。</span>
   </section>
 
   <main id="button-grid" class="grid"></main>
+
+  <section class="sql-lab">
+    <div class="panel-head">
+      <div>
+        <h2>现场 SQL 控制台</h2>
+        <p>可直接输入 SQL，也可以先点下方推荐脚本快速演示。多条语句用分号分隔，结果会追加到下方输出区和 session.log。</p>
+      </div>
+      <div class="sql-actions">
+        <button id="btn-sql-run">执行输入 SQL</button>
+        <button id="btn-sql-clear" class="ghost">清空输入框</button>
+      </div>
+    </div>
+
+    <div id="sql-presets" class="preset-grid"></div>
+
+    <label class="sql-input-wrap" for="sql-editor">
+      <span class="sql-input-label">手写 SQL</span>
+      <textarea id="sql-editor" class="sql-editor" spellcheck="false" placeholder="例如：
+CREATE TABLE live_demo(id INT, name CHAR(10));
+INSERT INTO live_demo VALUES (1, 'ok');
+SELECT * FROM live_demo;"></textarea>
+    </label>
+  </section>
 
   <section class="console-wrap">
     <div class="console-head">

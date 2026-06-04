@@ -50,6 +50,9 @@ OBSERVER_AUTO_START=0 node lab/frontend/server.js
 ## 使用
 
 - **功能按钮**：每行一个已实现功能（basic / drop-table / update / date / aggregation / like / join / function / order-by / group-by / multi-index / unique / null / simple-sub-query / complex-sub-query / update-select / big-query / big-write），点击会把对应 SQL 一条条发到 observer，结果逐条追加到下方控制台。
+- **现场 SQL 控制台**：主页面新增可手写 SQL 的输入区，支持一次输入多条语句（用分号分隔）并直接执行；结果会同时进入页面输出区与 `session.log`。
+- **推荐脚本**：在手写 SQL 区上方提供几组适合给老师现场演示的推荐脚本（基础建表、NULL、UNIQUE、UPDATE+子查询），可一键加载或直接执行。
+- **测试总览页**：主页面右上新增“测试总览”入口，跳转到 `/tests.html`；页面会汇总 `lab/test/latest.json`、`latest.md`、测试说明和功能展示说明，集中展示 135 条测试资产、分类覆盖、慢用例和关键日志摘录。
 - **预期失败说明**：像“删除不存在的表”“UNIQUE 重复插入”“多行标量子查询赋值”这类故意保留的失败场景，页面会显示 `EXPECTED FAILURE`，日志里会以 `EXPF` 标记，并附中文说明，表示这是演示设计而不是程序异常。
 - **🔄 重置 demo 数据**：把 `demos.js` 里登记的 `demo_*` 表全部 DROP（不存在的表返回 FAILURE 是正常的）。**重跑同一按钮前必点**，否则表已存在会让 INSERT 重复入，导致 SELECT 出现多份数据。
 - **📥 导出日志**：把后端 `session.log` 下载为 `.log` 文本（含时间戳 + demoId + 每条 SQL 的 SUCCESS/FAILURE + 完整输出），用于验收归档。
@@ -75,6 +78,17 @@ OBSERVER_AUTO_START=0 node lab/frontend/server.js
 ```
 
 server 启动时清空旧日志；服务进程结束后日志仍在。`📥 导出日志` 按钮通过 `/api/log/download` 把它打成带时间戳的 `.log` 文件下载。
+
+## 测试展示页数据来源
+
+`/tests.html` 通过前端只读 API `/api/test-report` 汇总以下本地资产：
+
+- `lab/test/latest.json`
+- `lab/test/latest.md`
+- `lab/test/README.md`
+- `lab/log/xc/1357新增功能展示说明.md`
+
+因此你每次只要先更新 `lab/test/latest.*`，页面里的测试概览和日志摘录就会随之更新。
 
 ## 协议说明
 

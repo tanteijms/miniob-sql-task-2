@@ -83,6 +83,46 @@
   - 默认 `SQL_TIMEOUT_MS` 从 `8000` 调整为 `20000`。
   - 目的不是掩盖错误，而是避免 `big-query` / `big-write` 这类长脚本在展示阶段因前端代理超时被过早中断。
 
+### 7. 新增主页面手写 SQL 控制台
+
+- 修改 `lab/frontend/index.html` / `app.js` / `style.css`：
+  - 在原 demo 按钮区下方增加“现场 SQL 控制台”。
+  - 支持手写多条 SQL（分号分隔）直接执行，结果复用现有输出区和 `/api/sql`。
+  - 新增 4 组适合现场演示的推荐脚本：
+    - 基础建表 + 查询
+    - NULL 语义
+    - UNIQUE 约束
+    - UPDATE + 子查询
+- 额外通过 `metaLabel` 让自定义执行在 `session.log` 中带更清晰的标题，而不是只显示匿名 ad-hoc 批次。
+
+### 8. 新增测试总览页
+
+- 新增 `lab/frontend/tests.html` / `tests.js`，并在主页面加“测试总览”跳转按钮。
+- `server.js` 新增只读接口 `/api/test-report`，汇总本地资产：
+  - `lab/test/latest.json`
+  - `lab/test/latest.md`
+  - `lab/test/README.md`
+  - `lab/log/xc/1357新增功能展示说明.md`
+- 页面展示内容包括：
+  - 135 条测试的总体通过率卡片
+  - 官方 / 自定义 / 压力三类覆盖条形图
+  - 按 feature 汇总的覆盖矩阵
+  - 慢用例表（突出 join / 压力场景）
+  - 报告与展示说明摘录
+
+## 本轮静态验证
+
+- 已执行：
+  - `node --check lab/frontend/app.js`
+  - `node --check lab/frontend/server.js`
+  - `node --check lab/frontend/tests.js`
+  - `node --check lab/frontend/demos.js`
+- 均通过。
+
+## 额外说明
+
+- 按用户要求，本轮未替用户长期托管 `3001` 实例；只做代码开发与静态检查，实际页面联调由用户自行启动确认。
+
 ## 文档同步
 
 - 已更新 `lab/frontend/README.md`：
