@@ -48,7 +48,7 @@ RC HeapTableEngine::insert_record(Record &record)
   rc = insert_entry_of_indexes(record.data(), record.rid());
   if (rc != RC::SUCCESS) {  // 可能出现了键值重复
     RC rc2 = delete_entry_of_indexes(record.data(), record.rid(), false /*error_on_not_exists*/);
-    if (rc2 != RC::SUCCESS) {
+    if (rc2 != RC::SUCCESS && rc2 != RC::RECORD_NOT_EXIST) {
       LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
                 table_meta_->name(), rc2, strrc(rc2));
     }

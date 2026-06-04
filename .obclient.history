@@ -66,3 +66,29 @@ select max(num) from null_table3;
 select avg(num) from null_table3;
 ### 2026-06-03 03:22:53.069
 exit;
+### 2026-06-03 20:36:59.572
+CREATE TABLE t1(id int, name char(10));
+### 2026-06-03 20:36:59.626
+INSERT INTO t1 VALUES (1, 'hello');
+### 2026-06-03 20:36:59.630
+SELECT * FROM t1;
+### 2026-06-03 20:52:42.211
+DROP TABLE no_such_table_xyz;
+### 2026-06-03 20:52:42.347
+CREATE TABLE tnn(id int not null);
+### 2026-06-03 20:52:42.545
+INSERT INTO tnn VALUES (null);
+### 2026-06-03 20:59:16.473
+DROP TABLE IF EXISTS noexist;
+### 2026-06-03 20:59:16.608
+DROP TABLE noexist;
+### 2026-06-03 20:59:43.508
+CREATE TABLE t_dup(id int);
+### 2026-06-03 21:00:09.366
+CREATE TABLE t_show(id int);
+### 2026-06-03 21:00:09.451
+INSERT INTO t_show VALUES (1);
+### 2026-06-03 21:00:09.453
+SHOW TABLES;
+### 2026-06-03 21:00:09.454
+exit
