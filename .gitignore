@@ -34,3 +34,9 @@ src/observer/sql/parser/yacc_sql.hpp
 .miniob.history
 observer.log.*
 miniob/
+
+# 本地打包的提交材料副本（cp 生成，不纳入版本库）
+lab/提交/
+/lab/doc/img/ai
+/lab/doc/img/frontend
+/lab/doc/img
